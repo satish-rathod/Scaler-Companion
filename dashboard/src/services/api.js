@@ -45,4 +45,9 @@ export const getQueueStatus = async () => {
   return response.data;
 };
 
+export const searchContent = async (query) => {
+  const response = await api.get(`/v1/search?q=${encodeURIComponent(query)}`);
+  return response.data;
+};
+
 export default api;
