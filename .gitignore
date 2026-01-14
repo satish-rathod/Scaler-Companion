@@ -5,6 +5,7 @@ __pycache__/
 venv/
 .env
 .DS_Store
+*.log
 
 # Node
 node_modules/
@@ -21,3 +22,6 @@ output/YYYY-MM-DD_*/
 # IDE
 .vscode/
 .idea/
+
+# Verification
+verification/
