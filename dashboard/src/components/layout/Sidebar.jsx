@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, PlaySquare, Settings, Activity } from 'lucide-react';
+import { Home, PlaySquare, Settings, Activity, Search } from 'lucide-react';
 import clsx from 'clsx';
 
 const NavItem = ({ to, icon: Icon, label }) => {
@@ -35,6 +35,7 @@ const Sidebar = () => {
       <nav className="flex-1 p-4 space-y-2">
         <NavItem to="/" icon={Home} label="Library" />
         <NavItem to="/queue" icon={Activity} label="Queue" />
+        <NavItem to="/search" icon={Search} label="Search" />
       </nav>
 
       <div className="p-4 border-t border-gray-100">
