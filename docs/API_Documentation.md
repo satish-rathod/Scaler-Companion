@@ -1,292 +1,108 @@
-# Scaler Companion - API Documentation
+# Scaler Companion V2 API Reference
 
 ## Base URL
-```
-http://localhost:8000
-```
+`http://localhost:8000/api/v1`
 
----
+## Endpoints
 
-## Health & Status
+### Content Management
 
-### GET /health
-Health check endpoint.
-
-**Response:**
-```json
-{
-  "status": "healthy",
-  "timestamp": "2026-01-14T09:30:00.000000",
-  "version": "1.0.0"
-}
-```
-
----
-
-## Download Endpoints
-
-### POST /api/download
-Start downloading a lecture from Scaler Academy.
-
-**Request Body:**
-```json
-{
-  "title": "DevOps Introduction",
-  "url": "https://www.scaler.com/class/490070/session",
-  "streamInfo": {
-    "baseUrl": "https://media.scaler.com/.../stream_0/",
-    "streamUrl": "https://media.scaler.com/.../720p/.m3u8",
-    "keyPairId": "K4IMAQNEJMDV1",
-    "policy": "base64-encoded-policy",
-    "signature": "cloudfront-signature",
-    "detectedChunk": 450
-  },
-  "startTime": 0,
-  "endTime": 3600
-}
-```
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `title` | string | Yes | Lecture title (used for folder naming) |
-| `url` | string | Yes | Original Scaler page URL |
-| `streamInfo.baseUrl` | string | Yes | HLS chunk base URL |
-| `streamInfo.keyPairId` | string | Yes | CloudFront Key-Pair-Id |
-| `streamInfo.policy` | string | Yes | CloudFront Policy |
-| `streamInfo.signature` | string | Yes | CloudFront Signature |
-| `streamInfo.detectedChunk` | int | No | Last detected chunk number |
-| `startTime` | int | No | Start time in seconds |
-| `endTime` | int | No | End time in seconds |
-
-**Response:**
-```json
-{
-  "downloadId": "550e8400-e29b-41d4-a716-446655440000",
-  "message": "Download started"
-}
-```
-
----
-
-### GET /api/status/{download_id}
-Get download progress and status.
-
-**Response:**
-```json
-{
-  "downloadId": "550e8400-e29b-41d4-a716-446655440000",
-  "status": "downloading",
-  "progress": 45.5,
-  "message": "Downloading: chunk 200/450",
-  "path": null,
-  "error": null
-}
-```
-
-| Status Values | Description |
-|---------------|-------------|
-| `pending` | Download queued |
-| `downloading` | Actively downloading chunks |
-| `complete` | Download finished successfully |
-| `error` | Download failed |
-
----
-
-## Processing Endpoints
-
-### POST /api/process
-Start AI processing on a downloaded video.
-
-**Request Body:**
-```json
-{
-  "title": "DevOps Introduction",
-  "videoPath": "/path/to/output/videos/DevOps_Introduction/full_video.mp4",
-  "whisperModel": "medium",
-  "ollamaModel": "gpt-oss:20b",
-  "skipTranscription": false,
-  "skipFrames": false,
-  "skipNotes": false,
-  "skipSlideAnalysis": true
-}
-```
-
-| Field | Type | Default | Description |
-|-------|------|---------|-------------|
-| `title` | string | Required | Lecture title |
-| `videoPath` | string | Required | Absolute path to video file |
-| `whisperModel` | string | `"medium"` | Whisper model size |
-| `ollamaModel` | string | `"gpt-oss:20b"` | Ollama model for notes |
-| `skipTranscription` | bool | `false` | Skip Whisper transcription |
-| `skipFrames` | bool | `false` | Skip frame extraction |
-| `skipNotes` | bool | `false` | Skip LLM note generation |
-| `skipSlideAnalysis` | bool | `false` | Skip OCR/vision analysis |
-
-**Response:**
-```json
-{
-  "processId": "660e8400-e29b-41d4-a716-446655440000",
-  "message": "Job queued successfully",
-  "position": 1
-}
-```
-
----
-
-### GET /api/process/{process_id}
-Get processing status.
-
-**Response:**
-```json
-{
-  "processId": "660e8400-e29b-41d4-a716-446655440000",
-  "status": "processing",
-  "progress": 67.5,
-  "stage": "notes",
-  "message": "Generating lecture notes...",
-  "outputDir": null,
-  "error": null,
-  "title": "DevOps Introduction"
-}
-```
-
-| Stage Values | Progress Range |
-|--------------|----------------|
-| `transcription` | 0-40% |
-| `frames` | 40-70% |
-| `notes` | 70-100% |
-
----
-
-### GET /api/models
-List available Ollama models.
-
-**Response:**
-```json
-{
-  "models": [
-    "gpt-oss:20b",
-    "llama3.2:latest",
-    "codellama:13b"
-  ]
-}
-```
-
----
-
-## Recording Management
-
-### GET /api/recordings
-List all recordings (downloaded and/or processed).
+#### `GET /recordings`
+List all recordings in the library. Merges downloaded videos with processed artifacts.
 
 **Response:**
 ```json
 {
   "recordings": [
     {
-      "id": "2026-01-14_DevOps_Introduction",
-      "title": "DevOps Introduction",
+      "id": "2024-01-01_Lecture_Title",
+      "title": "Lecture Title",
       "status": "processed",
-      "date": "2026-01-14",
-      "path": "/path/to/output/2026-01-14_DevOps_Introduction",
-      "videoPath": "/path/to/output/videos/DevOps_Introduction/full_video.mp4",
-      "processed": true,
-      "artifacts": {
-        "notes": "/content/2026-01-14_DevOps_Introduction/lecture_notes.md",
-        "summary": "/content/2026-01-14_DevOps_Introduction/summary.md",
-        "qa_cards": "/content/2026-01-14_DevOps_Introduction/qa_cards.md",
-        "transcript": "/content/2026-01-14_DevOps_Introduction/transcript_with_slides.md",
-        "slides": "/content/2026-01-14_DevOps_Introduction/slides/"
-      }
+      "date": "2024-01-01",
+      "progress": 100,
+      "artifacts": { ... }
     }
   ]
 }
 ```
 
-| Status Values | Description |
-|---------------|-------------|
-| `downloaded` | Video downloaded, not processed |
-| `processing` | Currently being processed |
-| `processed` | Fully processed with artifacts |
-| `queued` | Waiting in processing queue |
+#### `DELETE /recordings/{id}`
+Delete a recording and all associated files (video, notes, slides).
 
----
+### Downloads
 
-### GET /api/recordings/check
-Check if a recording exists by title.
+#### `POST /download`
+Start downloading a new lecture.
 
-**Query Parameters:**
-| Param | Type | Description |
-|-------|------|-------------|
-| `title` | string | Recording title to search |
+**Body:**
+```json
+{
+  "title": "Lecture Name",
+  "url": "https://...",
+  "streamInfo": {
+    "baseUrl": "...",
+    "streamUrl": "...",
+    "keyPairId": "...",
+    "policy": "...",
+    "signature": "..."
+  }
+}
+```
+
+#### `GET /status/{download_id}`
+Check the progress of a specific download.
+
+### AI Processing
+
+#### `POST /process`
+Enqueue a downloaded video for AI processing.
+
+**Body:**
+```json
+{
+  "title": "Lecture Name",
+  "videoPath": "/absolute/path/to/video.mp4",
+  "whisperModel": "medium",
+  "ollamaModel": "gpt-oss:20b",
+  "skipTranscription": false
+}
+```
+
+#### `GET /process/{process_id}`
+Check the status of a processing job.
+
+#### `GET /queue`
+Get the global status of the processing queue.
 
 **Response:**
 ```json
 {
-  "exists": true,
-  "status": "processed",
-  "path": "/path/to/output/2026-01-14_DevOps_Introduction"
+  "queue": [ { "id": "...", "title": "..." } ],
+  "history": [ { "id": "...", "status": "processing", "progress": 45 } ]
 }
 ```
 
----
+#### `GET /models`
+List available Whisper and Ollama models.
 
-### DELETE /api/recordings/{recording_id}
-Delete a recording and all its artifacts.
+### Search & Export
+
+#### `GET /search?q={query}`
+Search across all processed transcripts and notes.
 
 **Response:**
 ```json
 {
-  "success": true,
-  "deleted": [
-    "/path/to/output/videos/DevOps_Introduction",
-    "/path/to/output/2026-01-14_DevOps_Introduction"
-  ],
-  "errors": []
+  "results": [
+    {
+      "id": "lecture_id",
+      "title": "Lecture Title",
+      "type": "transcript",
+      "match": "...snippet of text matching query..."
+    }
+  ]
 }
 ```
 
----
-
-## Static Content
-
-### GET /content/{folder}/{file}
-Serve static content from output directory.
-
-**Examples:**
-```
-GET /content/2026-01-14_DevOps_Introduction/lecture_notes.md
-GET /content/2026-01-14_DevOps_Introduction/slides/frame_00_05_30.png
-GET /content/2026-01-14_DevOps_Introduction/viewer.html
-```
-
----
-
-## Error Responses
-
-All endpoints may return:
-
-```json
-{
-  "detail": "Error message describing what went wrong"
-}
-```
-
-| HTTP Code | Meaning |
-|-----------|---------|
-| 400 | Bad request (invalid parameters) |
-| 404 | Resource not found |
-| 500 | Internal server error |
-
----
-
-## WebSocket (Planned for V2)
-
-Future support for real-time progress streaming:
-```
-WS /ws/progress/{job_id}
-```
-
----
-
-*API Version: 1.0.0 | Last Updated: 2026-01-14*
+#### `GET /export/{recording_id}`
+Download a ZIP archive of the recording's artifacts.
