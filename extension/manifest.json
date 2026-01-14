@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "Scaler Companion V2",
+  "version": "2.0.0",
+  "description": "Download and process Scaler Academy lectures.",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "scripting",
+    "webRequest"
+  ],
+  "host_permissions": [
+    "*://*.scaler.com/*",
+    "*://*.cloudfront.net/*",
+    "http://localhost:8000/*"
+  ],
+  "background": {
+    "service_worker": "background/service-worker.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://*.scaler.com/*"],
+      "js": ["content/inject.js"],
+      "run_at": "document_start"
+    }
+  ],
+  "action": {
+    "default_popup": "popup/popup.html"
+  }
+}
