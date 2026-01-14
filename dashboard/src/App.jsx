@@ -1,6 +1,8 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import ViewerPage from './pages/ViewerPage';
+import QueuePage from './pages/QueuePage';
+import SettingsPage from './pages/SettingsPage';
 
 function App() {
   return (
@@ -8,9 +10,8 @@ function App() {
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/recording/:id" element={<ViewerPage />} />
-        {/* Placeholders for routes in sidebar */}
-        <Route path="/queue" element={<HomePage />} />
-        <Route path="/settings" element={<HomePage />} />
+        <Route path="/queue" element={<QueuePage />} />
+        <Route path="/settings" element={<SettingsPage />} />
       </Routes>
     </Router>
   );

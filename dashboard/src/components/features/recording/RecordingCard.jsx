@@ -3,15 +3,17 @@ import { format } from 'date-fns';
 import { Play, FileText, Trash2, MoreVertical } from 'lucide-react';
 import StatusBadge from './StatusBadge';
 
-const RecordingCard = ({ recording, onDelete }) => {
+const RecordingCard = ({ recording, onDelete, onProcess }) => {
   const navigate = useNavigate();
 
   const handleCardClick = () => {
-    if (recording.status === 'processed' || recording.status === 'downloaded') {
-      // In V2 we might want to view downloaded ones too,
-      // but typically we process them first.
-      // For now, let's allow navigation to viewer for both.
+    if (recording.status === 'processed') {
       navigate(`/recording/${recording.id}`);
+    } else if (recording.status === 'downloaded') {
+      // Open processing modal (handled by parent for now via a prop or callback)
+      // Actually, we should trigger a callback here.
+      // But for layout simplicity let's assume parent passes `onProcess`.
+      if (onProcess) onProcess(recording);
     }
   };
 
@@ -22,7 +24,11 @@ const RecordingCard = ({ recording, onDelete }) => {
         onClick={handleCardClick}
       >
         <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm">
-          <Play className="w-5 h-5 text-gray-700 ml-1" />
+          {recording.status === 'processed' ? (
+            <Play className="w-5 h-5 text-gray-700 ml-1" />
+          ) : (
+            <FileText className="w-5 h-5 text-gray-700" />
+          )}
         </div>
 
         {/* Progress Overlay for downloading/processing */}

@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react';
 import { getRecordings, deleteRecording } from '../services/api';
 import Layout from '../components/layout/Layout';
 import RecordingCard from '../components/features/recording/RecordingCard';
+import ProcessModal from '../components/features/processing/ProcessModal';
 import { Loader } from 'lucide-react';
 
 const HomePage = () => {
   const [recordings, setRecordings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedRecording, setSelectedRecording] = useState(null);
 
   const fetchRecordings = async () => {
     try {
@@ -69,6 +71,7 @@ const HomePage = () => {
               key={rec.id}
               recording={rec}
               onDelete={handleDelete}
+              onProcess={() => setSelectedRecording(rec)}
             />
           ))}
 
@@ -79,6 +82,17 @@ const HomePage = () => {
             </div>
           )}
         </div>
+      )}
+
+      {selectedRecording && (
+        <ProcessModal
+          recording={selectedRecording}
+          onClose={() => setSelectedRecording(null)}
+          onSuccess={() => {
+            fetchRecordings();
+            // Optionally redirect to queue
+          }}
+        />
       )}
     </Layout>
   );

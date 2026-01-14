@@ -35,4 +35,14 @@ export const getArtifact = async (path) => {
   return response.data;
 };
 
+export const getModels = async () => {
+  const response = await api.get('/v1/models');
+  return response.data;
+};
+
+export const getQueueStatus = async () => {
+  const response = await api.get('/v1/queue');
+  return response.data;
+};
+
 export default api;
