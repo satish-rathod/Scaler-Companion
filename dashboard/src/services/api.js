@@ -29,4 +29,10 @@ export const getProcessStatus = async (id) => {
   return response.data;
 };
 
+export const getArtifact = async (path) => {
+  // path usually starts with /content/..., which is handled by proxy
+  const response = await axios.get(path);
+  return response.data;
+};
+
 export default api;
