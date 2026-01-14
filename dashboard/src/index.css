@@ -2,18 +2,37 @@
 @plugin "@tailwindcss/typography";
 
 @theme {
-  --color-notion-bg: #FFFFFF;
-  --color-notion-sidebar: #F7F7F5;
-  --color-notion-hover: #EFEFEF;
-  --color-notion-text: #37352F;
-  --color-notion-dim: #9B9A97;
-  --color-notion-border: #E9E9E7;
+  /* Using CSS variables for dynamic theme switching */
+  --color-notion-bg: var(--color-notion-bg);
+  --color-notion-sidebar: var(--color-notion-sidebar);
+  --color-notion-hover: var(--color-notion-hover);
+  --color-notion-text: var(--color-notion-text);
+  --color-notion-dim: var(--color-notion-dim);
+  --color-notion-border: var(--color-notion-border);
 
   --font-sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
 }
 
 @layer base {
+  :root {
+    --color-notion-bg: #FFFFFF;
+    --color-notion-sidebar: #F7F7F5;
+    --color-notion-hover: #EFEFEF;
+    --color-notion-text: #37352F;
+    --color-notion-dim: #9B9A97;
+    --color-notion-border: #E9E9E7;
+  }
+
+  .dark {
+    --color-notion-bg: #191919;
+    --color-notion-sidebar: #202020;
+    --color-notion-hover: #2C2C2C;
+    --color-notion-text: #D4D4D4;
+    --color-notion-dim: #888888;
+    --color-notion-border: #333333;
+  }
+
   body {
-    @apply text-notion-text bg-notion-bg antialiased;
+    @apply text-notion-text bg-notion-bg antialiased transition-colors duration-200;
   }
 }
