@@ -59,6 +59,7 @@ The `requirements.txt` will include the following key packages:
 
 ### AI & Media Processing
 - `openai-whisper` - Audio transcription
+- `librosa` - Audio analysis (legacy support/optional)
 - `ollama` - Python client for Ollama (or direct HTTP calls)
 - `easyocr` - Optical Character Recognition for slides
 - `imagehash` - For slide deduplication
