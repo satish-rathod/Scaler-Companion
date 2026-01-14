@@ -1,3 +1,19 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@theme {
+  --color-notion-bg: #FFFFFF;
+  --color-notion-sidebar: #F7F7F5;
+  --color-notion-hover: #EFEFEF;
+  --color-notion-text: #37352F;
+  --color-notion-dim: #9B9A97;
+  --color-notion-border: #E9E9E7;
+
+  --font-sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+}
+
+@layer base {
+  body {
+    @apply text-notion-text bg-notion-bg antialiased;
+  }
+}

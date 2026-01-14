@@ -10,37 +10,36 @@ const NavItem = ({ to, icon: Icon, label }) => {
     <Link
       to={to}
       className={clsx(
-        "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
+        "flex items-center gap-2 px-3 py-1.5 rounded-sm transition-colors text-sm font-medium",
         isActive
-          ? "bg-blue-50 text-blue-600"
-          : "text-gray-600 hover:bg-gray-50"
+          ? "bg-notion-hover text-notion-text"
+          : "text-notion-dim hover:bg-notion-hover hover:text-notion-text"
       )}
     >
-      <Icon className="w-5 h-5" />
-      <span className="font-medium">{label}</span>
+      <Icon className="w-4 h-4" />
+      <span>{label}</span>
     </Link>
   );
 };
 
 const Sidebar = () => {
   return (
-    <div className="w-64 bg-white border-r border-gray-200 h-screen flex flex-col fixed left-0 top-0">
-      <div className="p-6 border-b border-gray-100 flex items-center gap-3">
-        <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-          <Activity className="w-5 h-5 text-white" />
+    <div className="w-60 bg-notion-sidebar border-r border-notion-border h-screen flex flex-col fixed left-0 top-0">
+      <div className="p-4 flex items-center gap-3 mb-2">
+        <div className="w-6 h-6 bg-notion-text rounded-sm flex items-center justify-center text-white font-bold text-xs">
+          S
         </div>
-        <h1 className="text-xl font-bold text-gray-800">Scaler Companion</h1>
+        <h1 className="text-sm font-semibold text-notion-text truncate">Scaler Companion</h1>
       </div>
 
-      <nav className="flex-1 p-4 space-y-2">
+      <nav className="flex-1 px-2 space-y-0.5">
         <NavItem to="/" icon={Home} label="Library" />
         <NavItem to="/queue" icon={Activity} label="Queue" />
         <NavItem to="/search" icon={Search} label="Search" />
+        <div className="pt-4">
+          <NavItem to="/settings" icon={Settings} label="Settings" />
+        </div>
       </nav>
-
-      <div className="p-4 border-t border-gray-100">
-        <NavItem to="/settings" icon={Settings} label="Settings" />
-      </div>
     </div>
   );
 };
