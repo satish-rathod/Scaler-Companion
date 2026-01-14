@@ -1,7 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 from app.core.config import settings
+from app.api.v1.api import api_router
 import os
 import subprocess
 
@@ -32,12 +34,20 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "*"], # * for Extension initially
+    allow_origins=["http://localhost:5173"], # Add Extension ID here in production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# Mount Output directory for static access
+settings.OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+app.mount("/content", StaticFiles(directory=str(settings.OUTPUT_DIR)), name="content")
+
+# Include API Router
+app.include_router(api_router, prefix=settings.API_V1_STR)
+
 @app.get("/health")
+@app.get("/api/health") # Alias for frontend proxy convenience
 async def health_check():
     return {"status": "healthy", "version": "2.0.0"}
