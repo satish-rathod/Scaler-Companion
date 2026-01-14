@@ -1,9 +1,11 @@
+import asyncio
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 from app.core.config import settings
 from app.api.v1.api import api_router
+from app.core.worker import process_worker
 import os
 import subprocess
 
@@ -23,8 +25,14 @@ def prevent_sleep():
 async def lifespan(app: FastAPI):
     print("🚀 Scaler Companion Backend starting...")
     prevent_sleep()
+
+    # Start the background worker
+    worker_task = asyncio.create_task(process_worker())
+
     yield
+
     print("👋 Scaler Companion Backend shutting down...")
+    worker_task.cancel()
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
