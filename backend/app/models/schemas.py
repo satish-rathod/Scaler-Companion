@@ -27,6 +27,7 @@ class DownloadStatus(BaseModel):
     message: Optional[str] = None
     path: Optional[str] = None
     error: Optional[str] = None
+    title: Optional[str] = None
 
 class ProcessRequest(BaseModel):
     title: str

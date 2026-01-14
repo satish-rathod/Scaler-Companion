@@ -99,7 +99,8 @@ async def start_download(request: DownloadRequest, background_tasks: BackgroundT
         downloadId=download_id,
         status="pending",
         progress=0.0,
-        message="Initializing..."
+        message="Initializing...",
+        title=request.title
     )
 
     background_tasks.add_task(run_download_task, download_id, request)
