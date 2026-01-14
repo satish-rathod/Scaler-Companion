@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
-import { Play, FileText, Trash2, MoreVertical } from 'lucide-react';
+import { FileText, MoreHorizontal } from 'lucide-react';
 import StatusBadge from './StatusBadge';
 
 const RecordingCard = ({ recording, onDelete, onProcess }) => {
@@ -10,30 +10,26 @@ const RecordingCard = ({ recording, onDelete, onProcess }) => {
     if (recording.status === 'processed') {
       navigate(`/recording/${recording.id}`);
     } else if (recording.status === 'downloaded') {
-      // Open processing modal (handled by parent for now via a prop or callback)
-      // Actually, we should trigger a callback here.
-      // But for layout simplicity let's assume parent passes `onProcess`.
       if (onProcess) onProcess(recording);
     }
   };
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow overflow-hidden group">
-      <div
-        className="h-40 bg-gray-100 relative cursor-pointer group-hover:bg-gray-200 transition-colors flex items-center justify-center"
-        onClick={handleCardClick}
-      >
-        <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm">
-          {recording.status === 'processed' ? (
-            <Play className="w-5 h-5 text-gray-700 ml-1" />
-          ) : (
-            <FileText className="w-5 h-5 text-gray-700" />
-          )}
-        </div>
+    <div
+      className="group relative flex flex-col gap-2 p-2 rounded-md hover:bg-notion-hover transition-colors cursor-pointer"
+      onClick={handleCardClick}
+    >
+      {/* Cover / Icon Area */}
+      <div className="h-32 w-full bg-notion-sidebar rounded-md border border-notion-border flex items-center justify-center relative overflow-hidden">
+        {recording.status === 'processed' ? (
+          <div className="text-4xl">📄</div>
+        ) : (
+          <div className="text-4xl opacity-50">⬇️</div>
+        )}
 
-        {/* Progress Overlay for downloading/processing */}
+        {/* Progress Overlay */}
         {recording.progress > 0 && recording.progress < 100 && (
-          <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-200">
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-notion-border">
             <div
               className="h-full bg-blue-500 transition-all duration-300"
               style={{ width: `${recording.progress}%` }}
@@ -42,28 +38,27 @@ const RecordingCard = ({ recording, onDelete, onProcess }) => {
         )}
       </div>
 
-      <div className="p-4">
-        <div className="flex items-start justify-between gap-3 mb-2">
-          <h3
-            className="font-semibold text-gray-900 line-clamp-2 cursor-pointer hover:text-blue-600"
-            onClick={handleCardClick}
-          >
-            {recording.title}
-          </h3>
-          <button
-            onClick={(e) => { e.stopPropagation(); onDelete(recording.id); }}
-            className="text-gray-400 hover:text-red-500 transition-colors p-1"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
-        </div>
+      <div className="flex flex-col gap-1">
+        <h3 className="font-medium text-notion-text text-sm truncate group-hover:underline decoration-notion-dim underline-offset-4">
+          {recording.title}
+        </h3>
 
-        <div className="flex items-center justify-between mt-4">
-          <div className="flex items-center gap-2 text-sm text-gray-500">
-            <span>{format(new Date(recording.date || Date.now()), 'MMM d, yyyy')}</span>
-          </div>
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-notion-dim">
+            {format(new Date(recording.date || Date.now()), 'MMM d, yyyy')}
+          </span>
           <StatusBadge status={recording.status} />
         </div>
+      </div>
+
+      {/* Hover Actions (Notion style: appears on hover) */}
+      <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button
+          onClick={(e) => { e.stopPropagation(); onDelete(recording.id); }}
+          className="p-1 rounded hover:bg-white/50 text-notion-dim hover:text-red-500"
+        >
+          <MoreHorizontal className="w-4 h-4" />
+        </button>
       </div>
     </div>
   );
