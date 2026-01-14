@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { getRecordings, getArtifact } from '../services/api';
+import { getRecordings, getArtifact, exportRecording } from '../services/api';
 import Layout from '../components/layout/Layout';
 import VideoPlayer from '../components/features/viewer/VideoPlayer';
 import MarkdownViewer from '../components/features/viewer/MarkdownViewer';
 import Tabs from '../components/common/Tabs';
-import { Loader } from 'lucide-react';
+import { Loader, Download } from 'lucide-react';
 
 const ViewerPage = () => {
   const { id } = useParams();
@@ -112,11 +112,45 @@ const ViewerPage = () => {
       }
   }
 
+  const handleExport = async () => {
+    try {
+      const response = await exportRecording(id);
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      // Extract filename from header or fallback
+      const contentDisposition = response.headers['content-disposition'];
+      let filename = 'export.zip';
+      if (contentDisposition) {
+        const matches = /filename="([^"]*)"/.exec(contentDisposition);
+        if (matches != null && matches[1]) {
+          filename = matches[1];
+        }
+      }
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (err) {
+      console.error("Export failed", err);
+      alert("Failed to export recording.");
+    }
+  };
+
   return (
     <Layout>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">{recording.title}</h1>
-        <p className="text-sm text-gray-500">{recording.date}</p>
+      <div className="mb-6 flex justify-between items-start">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">{recording.title}</h1>
+          <p className="text-sm text-gray-500">{recording.date}</p>
+        </div>
+        <button
+          onClick={handleExport}
+          className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+        >
+          <Download className="w-4 h-4" />
+          Export
+        </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

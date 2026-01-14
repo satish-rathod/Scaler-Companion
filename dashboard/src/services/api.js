@@ -50,4 +50,10 @@ export const searchContent = async (query) => {
   return response.data;
 };
 
+export const exportRecording = async (id) => {
+  // Return blob response for file download
+  const response = await api.get(`/v1/export/${id}`, { responseType: 'blob' });
+  return response;
+};
+
 export default api;

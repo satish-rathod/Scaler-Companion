@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import Layout from '../components/layout/Layout';
 import { Save } from 'lucide-react';
+import useTheme from '../hooks/useTheme';
 
 const SettingsPage = () => {
+  const { theme, toggleTheme } = useTheme();
   const [settings, setSettings] = useState({
-    theme: 'light',
     autoProcess: false,
     defaultWhisperModel: 'medium',
     defaultOllamaModel: 'gpt-oss:20b'
@@ -13,12 +14,21 @@ const SettingsPage = () => {
   useEffect(() => {
     const saved = localStorage.getItem('scaler_settings');
     if (saved) {
-      setSettings(JSON.parse(saved));
+      const parsed = JSON.parse(saved);
+      // Remove theme from state as it's handled by hook
+      delete parsed.theme;
+      setSettings(prev => ({ ...prev, ...parsed }));
     }
   }, []);
 
   const handleSave = () => {
-    localStorage.setItem('scaler_settings', JSON.stringify(settings));
+    // Preserve theme in storage via hook logic, but here we save other settings
+    // Actually the hook manages 'theme' key in same storage object potentially?
+    // Let's keep them separate or merge carefully.
+    // The hook writes to 'scaler_settings'. We should read current, update fields, write back.
+    const current = JSON.parse(localStorage.getItem('scaler_settings') || '{}');
+    const updated = { ...current, ...settings };
+    localStorage.setItem('scaler_settings', JSON.stringify(updated));
     alert('Settings saved!');
   };
 
@@ -30,10 +40,29 @@ const SettingsPage = () => {
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-6">
 
           <div>
-            <h3 className="font-medium text-gray-900 mb-4">Defaults</h3>
+            <h3 className="font-medium text-notion-text mb-4">Appearance</h3>
+            <div className="flex items-center justify-between p-4 border border-notion-border rounded-lg">
+              <span className="text-sm font-medium text-notion-text">Dark Mode</span>
+              <button
+                onClick={toggleTheme}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  theme === 'dark' ? 'bg-blue-600' : 'bg-gray-200'
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    theme === 'dark' ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <h3 className="font-medium text-notion-text mb-4">Defaults</h3>
             <div className="grid gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-notion-text mb-1">
                   Default Whisper Model
                 </label>
                 <select

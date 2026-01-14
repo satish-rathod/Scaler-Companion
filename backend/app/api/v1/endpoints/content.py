@@ -6,6 +6,7 @@ from datetime import datetime
 from fastapi import APIRouter, HTTPException, Query
 from app.core.config import settings
 from app.core.state import downloads, processes
+from app.utils.security import validate_safe_path
 
 router = APIRouter()
 
@@ -153,6 +154,11 @@ async def list_recordings():
 @router.delete("/recordings/{recording_id}")
 async def delete_recording(recording_id: str):
     """Delete a recording and all its artifacts"""
+
+    # 1. Validate input
+    if ".." in recording_id or "/" in recording_id or "\\" in recording_id:
+         raise HTTPException(status_code=400, detail="Invalid recording ID")
+
     deleted = []
     errors = []
 
@@ -160,6 +166,8 @@ async def delete_recording(recording_id: str):
     videos_path = settings.VIDEO_DIR / recording_id
     if videos_path.exists():
         try:
+            # Check security
+            validate_safe_path(settings.VIDEO_DIR, recording_id)
             shutil.rmtree(videos_path)
             deleted.append(str(videos_path))
         except Exception as e:
