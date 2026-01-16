@@ -6,8 +6,11 @@ import StatusBadge from './StatusBadge';
 const RecordingCard = ({ recording, onDelete, onProcess }) => {
   const navigate = useNavigate();
 
+  // Check if recording is fully processed (backend returns 'complete' when done)
+  const isProcessed = recording.status === 'complete' || recording.status === 'processed';
+
   const handleCardClick = () => {
-    if (recording.status === 'processed') {
+    if (isProcessed) {
       navigate(`/recording/${recording.id}`);
     } else if (recording.status === 'downloaded') {
       if (onProcess) onProcess(recording);
@@ -21,7 +24,7 @@ const RecordingCard = ({ recording, onDelete, onProcess }) => {
     >
       {/* Cover / Icon Area */}
       <div className="h-32 w-full bg-notion-sidebar rounded-md border border-notion-border flex items-center justify-center relative overflow-hidden">
-        {recording.status === 'processed' ? (
+        {isProcessed ? (
           <div className="text-4xl">📄</div>
         ) : (
           <div className="text-4xl opacity-50">⬇️</div>

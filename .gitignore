@@ -3,25 +3,46 @@ __pycache__/
 *.py[cod]
 *$py.class
 venv/
+*.egg-info/
+.eggs/
 .env
-.DS_Store
-*.log
 
 # Node
 node_modules/
 dist/
+package-lock.json
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
 
-# Output
-output/videos/
-output/YYYY-MM-DD_*/
+# Logs
+*.log
+backend/*.log
+dashboard/*.log
+
+# Output directories (processed videos, generated content)
+backend/output/
+output/
+
+# Temp files
+temp/
+*.tmp
+*.temp
 
 # IDE
 .vscode/
 .idea/
+*.swp
+*.swo
 
-# Verification
+# OS
+.DS_Store
+Thumbs.db
+
+# Verification/Testing
 verification/
+
+# Build artifacts
+build/
+*.pyc

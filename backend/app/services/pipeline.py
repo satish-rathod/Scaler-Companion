@@ -128,6 +128,11 @@ class ProcessingPipeline:
             with open(output_dir / "qa_cards.md", "w") as f:
                 f.write(notes_data['qa'])
 
+            # Save announcements if generated
+            if 'announcements' in notes_data:
+                with open(output_dir / "announcements.md", "w") as f:
+                    f.write(notes_data['announcements'])
+
         self._update_progress("complete", 100, 100, "Processing complete!")
 
         return {

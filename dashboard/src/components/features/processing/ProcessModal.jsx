@@ -7,7 +7,7 @@ const ProcessModal = ({ recording, onClose, onSuccess }) => {
   const [initializing, setInitializing] = useState(true);
   const [models, setModels] = useState({ whisper: [], ollama: [] });
   const [config, setConfig] = useState({
-    whisperModel: 'medium',
+    whisperModel: 'turbo',
     ollamaModel: '',
     skipTranscription: false,
     skipFrames: false,
@@ -78,7 +78,7 @@ const ProcessModal = ({ recording, onClose, onSuccess }) => {
               </label>
               <select
                 value={config.whisperModel}
-                onChange={e => setConfig({...config, whisperModel: e.target.value})}
+                onChange={e => setConfig({ ...config, whisperModel: e.target.value })}
                 className="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               >
                 {models.whisper.map(m => (
@@ -93,7 +93,7 @@ const ProcessModal = ({ recording, onClose, onSuccess }) => {
               </label>
               <select
                 value={config.ollamaModel}
-                onChange={e => setConfig({...config, ollamaModel: e.target.value})}
+                onChange={e => setConfig({ ...config, ollamaModel: e.target.value })}
                 className="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               >
                 {models.ollama.map(m => (
@@ -107,7 +107,7 @@ const ProcessModal = ({ recording, onClose, onSuccess }) => {
                 <input
                   type="checkbox"
                   checked={config.skipTranscription}
-                  onChange={e => setConfig({...config, skipTranscription: e.target.checked})}
+                  onChange={e => setConfig({ ...config, skipTranscription: e.target.checked })}
                   className="rounded text-blue-600"
                 />
                 <span className="text-sm text-gray-600">Skip Transcription (Use existing)</span>
@@ -117,7 +117,7 @@ const ProcessModal = ({ recording, onClose, onSuccess }) => {
                 <input
                   type="checkbox"
                   checked={config.skipFrames}
-                  onChange={e => setConfig({...config, skipFrames: e.target.checked})}
+                  onChange={e => setConfig({ ...config, skipFrames: e.target.checked })}
                   className="rounded text-blue-600"
                 />
                 <span className="text-sm text-gray-600">Skip Slide Extraction</span>

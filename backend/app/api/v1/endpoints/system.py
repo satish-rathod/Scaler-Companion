@@ -18,7 +18,8 @@ async def list_models():
         ollama_models = ["gpt-oss:20b"] # Fallback
 
     return {
-        "whisper": ["tiny", "base", "small", "medium", "large", "large-v2", "large-v3"],
+        # Simplified to 4 logical choices - turbo is recommended (fastest + best quality)
+        "whisper": ["turbo", "large-v3", "medium", "small"],
         "ollama": ollama_models
     }
 

@@ -1,44 +1,214 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <meta charset="UTF-8">
     <style>
         :root {
             --bg: #FFFFFF;
+            --bg-secondary: #F7F7F5;
             --text: #37352F;
-            --dim: #9B9A97;
+            --text-secondary: #787774;
             --hover: #EFEFEF;
             --border: #E9E9E7;
             --blue: #2383E2;
+            --green: #0F7B6C;
+            --red: #EB5757;
+            --orange: #D9730D;
         }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
         body {
-            width: 320px;
+            width: 340px;
             padding: 16px;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
             color: var(--text);
             background: var(--bg);
-            margin: 0;
+            font-size: 13px;
+            line-height: 1.5;
         }
-        h3 {
-            font-size: 14px;
-            font-weight: 600;
-            margin: 0 0 12px 0;
+
+        /* Offline Banner */
+        .offline-banner {
+            display: none;
+            background: var(--red);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin-bottom: 12px;
+            font-size: 12px;
+            text-align: center;
+        }
+
+        .offline-banner.visible {
+            display: block;
+        }
+
+        /* Header */
+        .header {
             display: flex;
             align-items: center;
             gap: 8px;
-        }
-        .status-box {
-            background: #F7F7F5;
-            border-radius: 4px;
-            padding: 12px;
-            font-size: 13px;
             margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .logo {
+            background: #37352F;
+            color: white;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .header h1 {
+            font-size: 14px;
+            font-weight: 600;
+            flex: 1;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--green);
+        }
+
+        .status-dot.offline {
+            background: var(--red);
+        }
+
+        .status-dot.processing {
+            background: var(--blue);
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 32px 16px;
+            color: var(--text-secondary);
+        }
+
+        .empty-state-icon {
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+
+        .empty-state h3 {
+            font-size: 14px;
+            font-weight: 600;
             color: var(--text);
+        }
+
+        .empty-state p {
+            font-size: 12px;
+            margin-top: 4px;
+        }
+
+        /* Lecture Section */
+        .lecture-section {
+            display: none;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        /* Lecture Card */
+        .lecture-card {
+            background: var(--bg-secondary);
+            border-radius: 6px;
+            padding: 12px;
             border: 1px solid var(--border);
         }
+
+        .lecture-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        .lecture-title {
+            font-weight: 600;
+            font-size: 14px;
+            flex: 1;
+            line-height: 1.4;
+        }
+
+        .downloaded-badge {
+            display: none;
+            background: var(--green);
+            color: white;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .lecture-meta {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 6px;
+        }
+
+        /* Time Inputs */
+        .time-inputs {
+            display: flex;
+            gap: 8px;
+        }
+
+        .time-input {
+            flex: 1;
+        }
+
+        .time-input label {
+            display: block;
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .time-input input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            font-size: 12px;
+            font-family: monospace;
+        }
+
+        .time-input input:focus {
+            outline: none;
+            border-color: var(--blue);
+        }
+
+        /* Buttons */
         button {
             width: 100%;
-            padding: 8px 12px;
+            padding: 10px 12px;
             border-radius: 4px;
             border: 1px solid var(--border);
             background: white;
@@ -46,49 +216,187 @@
             font-size: 13px;
             font-weight: 500;
             cursor: pointer;
-            transition: background 0.1s;
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
         }
+
         button:hover {
             background: var(--hover);
         }
+
         button:disabled {
             opacity: 0.5;
             cursor: not-allowed;
         }
+
         button.primary {
             background: var(--blue);
             color: white;
             border-color: var(--blue);
         }
+
         button.primary:hover {
             background: #1a73ca;
         }
-        .meta {
+
+        .btn-icon {
+            font-size: 14px;
+        }
+
+        /* Progress Section */
+        .progress-section {
+            display: none;
+            background: var(--bg-secondary);
+            border-radius: 6px;
+            padding: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .progress-stage {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--blue);
+        }
+
+        .progress-percent {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .progress-bar {
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-bottom: 6px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--blue);
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 2px;
+        }
+
+        .progress-message {
             font-size: 11px;
-            color: var(--dim);
-            margin-top: 12px;
-            text-align: center;
+            color: var(--text-secondary);
+        }
+
+        /* Post Download */
+        .post-download {
+            display: none;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        /* Footer */
+        .footer {
+            margin-top: 16px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        .footer a {
+            color: var(--blue);
+            text-decoration: none;
         }
     </style>
 </head>
-<body>
-    <h3>
-        <span style="background: #37352F; color: white; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; border-radius: 3px; font-size: 10px;">S</span>
-        Scaler Companion
-    </h3>
 
-    <div id="status" class="status-box">
-        Checking for stream...
+<body>
+    <!-- Offline Banner -->
+    <div id="offlineBanner" class="offline-banner">
+        ⚠️ Backend not running. Start with ./start.sh
     </div>
 
-    <button id="downloadBtn" class="primary" disabled>
-        Download to Library
-    </button>
+    <!-- Header -->
+    <div class="header">
+        <span class="logo">S</span>
+        <h1>Scaler Companion</h1>
+        <span id="statusDot" class="status-dot"></span>
+    </div>
 
-    <div class="meta">
-        v2.0 • <a href="http://localhost:5173" target="_blank" style="color: inherit; text-decoration: underline;">Open Dashboard</a>
+    <!-- Empty State -->
+    <div id="emptyState" class="empty-state">
+        <div class="empty-state-icon">📺</div>
+        <h3>No Lecture Detected</h3>
+        <p>Navigate to a Scaler Academy recording</p>
+    </div>
+
+    <!-- Lecture Section -->
+    <div id="lectureSection" class="lecture-section">
+        <!-- Lecture Card -->
+        <div class="lecture-card">
+            <div class="lecture-header">
+                <span id="lectureTitle" class="lecture-title">Loading...</span>
+                <span id="downloadedBadge" class="downloaded-badge">✓ Downloaded</span>
+            </div>
+            <div id="lectureMeta" class="lecture-meta">Detecting stream...</div>
+        </div>
+
+        <!-- Time Inputs -->
+        <div id="timeInputs" class="time-inputs">
+            <div class="time-input">
+                <label>Start Time</label>
+                <input type="text" id="startTime" placeholder="00:00:00">
+            </div>
+            <div class="time-input">
+                <label>End Time</label>
+                <input type="text" id="endTime" placeholder="00:00:00">
+            </div>
+        </div>
+
+        <!-- Download Button -->
+        <button id="downloadBtn" class="primary">
+            <span class="btn-icon">↓</span> Download Lecture
+        </button>
+
+        <!-- Progress Section -->
+        <div id="progressSection" class="progress-section">
+            <div class="progress-header">
+                <span id="progressStage" class="progress-stage">Downloading</span>
+                <span id="progressPercent" class="progress-percent">0%</span>
+            </div>
+            <div class="progress-bar">
+                <div id="progressFill" class="progress-fill"></div>
+            </div>
+            <div id="progressMessage" class="progress-message">Starting...</div>
+        </div>
+
+        <!-- Post Download Actions -->
+        <div id="postDownload" class="post-download">
+            <button id="dashboardBtn">
+                <span class="btn-icon">📊</span> Open Dashboard
+            </button>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <span>v2.0</span>
+        <span>•</span>
+        <a href="http://localhost:5173" target="_blank">Dashboard</a>
     </div>
 
     <script src="popup.js"></script>
 </body>
+
 </html>

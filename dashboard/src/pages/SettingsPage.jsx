@@ -7,7 +7,7 @@ const SettingsPage = () => {
   const { theme, toggleTheme } = useTheme();
   const [settings, setSettings] = useState({
     autoProcess: false,
-    defaultWhisperModel: 'medium',
+    defaultWhisperModel: 'turbo',
     defaultOllamaModel: 'gpt-oss:20b'
   });
 
@@ -45,14 +45,12 @@ const SettingsPage = () => {
               <span className="text-sm font-medium text-notion-text">Dark Mode</span>
               <button
                 onClick={toggleTheme}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                  theme === 'dark' ? 'bg-blue-600' : 'bg-gray-200'
-                }`}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${theme === 'dark' ? 'bg-blue-600' : 'bg-gray-200'
+                  }`}
               >
                 <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    theme === 'dark' ? 'translate-x-6' : 'translate-x-1'
-                  }`}
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${theme === 'dark' ? 'translate-x-6' : 'translate-x-1'
+                    }`}
                 />
               </button>
             </div>
@@ -67,7 +65,7 @@ const SettingsPage = () => {
                 </label>
                 <select
                   value={settings.defaultWhisperModel}
-                  onChange={e => setSettings({...settings, defaultWhisperModel: e.target.value})}
+                  onChange={e => setSettings({ ...settings, defaultWhisperModel: e.target.value })}
                   className="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 >
                   <option value="tiny">Tiny (Fastest)</option>
@@ -82,7 +80,7 @@ const SettingsPage = () => {
                 <input
                   type="checkbox"
                   checked={settings.autoProcess}
-                  onChange={e => setSettings({...settings, autoProcess: e.target.checked})}
+                  onChange={e => setSettings({ ...settings, autoProcess: e.target.checked })}
                   className="rounded text-blue-600"
                 />
                 <span className="text-sm text-gray-700">Auto-process downloads when finished</span>

@@ -42,8 +42,8 @@ async def list_recordings():
                 # but we rely on the process state dict for active processing status.
                 # Here we just check what artifacts exist.
 
-                status = "processed" if is_processed else "downloaded" # Default to downloaded if processed folder exists but no notes?
-                # Actually if it's in output folder it means at least pipeline started.
+                # Use 'complete' status for fully processed recordings
+                status = "complete" if is_processed else "downloaded"
 
                 # Find matching video in videos folder to link
                 video_path = None
@@ -72,6 +72,7 @@ async def list_recordings():
                         "qa_cards": f"/content/{folder_name}/qa_cards.md" if (output_folder / "qa_cards.md").exists() else None,
                         "slides": f"/content/{folder_name}/slides/" if (output_folder / "slides").exists() else None,
                         "transcript": f"/content/{folder_name}/transcript.txt" if (output_folder / "transcript.txt").exists() else None,
+                        "announcements": f"/content/{folder_name}/announcements.md" if (output_folder / "announcements.md").exists() else None,
                     }
                 }
 

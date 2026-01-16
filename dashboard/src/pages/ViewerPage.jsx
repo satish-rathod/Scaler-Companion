@@ -1,21 +1,23 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { getRecordings, getArtifact, exportRecording } from '../services/api';
 import Layout from '../components/layout/Layout';
-import VideoPlayer from '../components/features/viewer/VideoPlayer';
 import MarkdownViewer from '../components/features/viewer/MarkdownViewer';
+import TranscriptViewer from '../components/features/viewer/TranscriptViewer';
 import Tabs from '../components/common/Tabs';
-import { Loader, Download } from 'lucide-react';
+import { Loader, Download, ArrowLeft, Play } from 'lucide-react';
 
 const ViewerPage = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [recording, setRecording] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('notes');
   const [tabContent, setTabContent] = useState({});
   const [loadingContent, setLoadingContent] = useState(false);
+  const [slides, setSlides] = useState([]);
 
-  // 1. Fetch Recording Metadata
+  // Fetch Recording Metadata
   useEffect(() => {
     const fetchRecording = async () => {
       try {
@@ -23,8 +25,6 @@ const ViewerPage = () => {
         const found = data.recordings.find(r => r.id === id);
         if (found) {
           setRecording(found);
-        } else {
-          console.error("Recording not found");
         }
       } catch (err) {
         console.error("Failed to load recording", err);
@@ -35,7 +35,27 @@ const ViewerPage = () => {
     fetchRecording();
   }, [id]);
 
-  // 2. Fetch Content when Tab Changes
+  // Fetch slides list
+  useEffect(() => {
+    const fetchSlides = async () => {
+      if (!recording?.artifacts?.slides) return;
+      try {
+        // Slides are in /content/{id}/slides/ - fetch list
+        const slidePath = recording.artifacts.slides;
+        // We'll construct slide URLs from 1 to N (assume max 50)
+        const slideUrls = [];
+        for (let i = 1; i <= 50; i++) {
+          slideUrls.push(`http://localhost:8000${slidePath}slide_${String(i).padStart(3, '0')}.jpg`);
+        }
+        setSlides(slideUrls);
+      } catch (err) {
+        console.error("Failed to load slides", err);
+      }
+    };
+    fetchSlides();
+  }, [recording]);
+
+  // Fetch Content when Tab Changes
   useEffect(() => {
     const fetchContent = async () => {
       if (!recording || !recording.artifacts) return;
@@ -45,6 +65,7 @@ const ViewerPage = () => {
         transcript: recording.artifacts.transcript,
         summary: recording.artifacts.summary,
         qa: recording.artifacts.qa_cards,
+        announcements: recording.artifacts.announcements,
       };
 
       const path = artifactMap[activeTab];
@@ -56,7 +77,7 @@ const ViewerPage = () => {
           setTabContent(prev => ({ ...prev, [activeTab]: content }));
         } catch (err) {
           console.error(`Failed to load ${activeTab}`, err);
-          setTabContent(prev => ({ ...prev, [activeTab]: "Failed to load content." }));
+          setTabContent(prev => ({ ...prev, [activeTab]: "Content not available." }));
         } finally {
           setLoadingContent(false);
         }
@@ -91,26 +112,8 @@ const ViewerPage = () => {
     { id: 'summary', label: 'Summary' },
     { id: 'qa', label: 'Q&A Cards' },
     { id: 'transcript', label: 'Transcript' },
+    { id: 'announcements', label: 'Announcements' },
   ];
-
-  // Construct video URL
-  // If videoPath is absolute path (from backend), we need to serve it.
-  // Currently backend serves /content -> output/
-  // But video might be in output/videos/Title/full_video.mp4 OR output/Date_Title/video.mp4
-  // The 'videoPath' from API is absolute file path. We need to convert it to a URL relative to /content
-  // or serve it via a dedicated endpoint.
-  // Given strict static mounting: app.mount("/content", output_dir)
-  // We need to find the relative path from output_dir.
-
-  // Hacky fix for URL generation based on our file structure knowledge
-  // If videoPath contains "output/", take everything after "output/"
-  let videoUrl = "";
-  if (recording.videoPath) {
-      const parts = recording.videoPath.split("output/");
-      if (parts.length > 1) {
-          videoUrl = `/content/${parts[1]}`;
-      }
-  }
 
   const handleExport = async () => {
     try {
@@ -118,14 +121,11 @@ const ViewerPage = () => {
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      // Extract filename from header or fallback
       const contentDisposition = response.headers['content-disposition'];
       let filename = 'export.zip';
       if (contentDisposition) {
         const matches = /filename="([^"]*)"/.exec(contentDisposition);
-        if (matches != null && matches[1]) {
-          filename = matches[1];
-        }
+        if (matches?.[1]) filename = matches[1];
       }
       link.setAttribute('download', filename);
       document.body.appendChild(link);
@@ -137,43 +137,73 @@ const ViewerPage = () => {
     }
   };
 
+  // Video URL construction
+  let videoUrl = "";
+  if (recording.videoPath) {
+    const parts = recording.videoPath.split("output/");
+    if (parts.length > 1) {
+      videoUrl = `http://localhost:8000/content/${parts[1]}`;
+    }
+  }
+
   return (
     <Layout>
-      <div className="mb-6 flex justify-between items-start">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">{recording.title}</h1>
-          <p className="text-sm text-gray-500">{recording.date}</p>
+      {/* Header */}
+      <div className="mb-6 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => navigate('/')}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">{recording.title}</h1>
+            <p className="text-sm text-gray-500">{recording.date}</p>
+          </div>
         </div>
-        <button
-          onClick={handleExport}
-          className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
-        >
-          <Download className="w-4 h-4" />
-          Export
-        </button>
+        <div className="flex items-center gap-3">
+          {videoUrl && (
+            <a
+              href={videoUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors"
+            >
+              <Play className="w-4 h-4" />
+              Watch Video
+            </a>
+          )}
+          <button
+            onClick={handleExport}
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+          >
+            <Download className="w-4 h-4" />
+            Export
+          </button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Column: Video */}
-        <div className="lg:col-span-2 space-y-6">
-          <VideoPlayer src={videoUrl} />
+      {/* Full-width Content Area */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+        <div className="border-b border-gray-200 px-6 pt-4">
+          <Tabs tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
         </div>
 
-        {/* Right Column: Content */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm h-[calc(100vh-200px)] flex flex-col">
-          <div className="px-4 pt-2">
-            <Tabs tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
-          </div>
-
-          <div className="flex-1 overflow-y-auto p-6">
-            {loadingContent ? (
-              <div className="flex justify-center py-8">
-                <Loader className="w-6 h-6 animate-spin text-gray-400" />
-              </div>
-            ) : (
-              <MarkdownViewer content={tabContent[activeTab]} />
-            )}
-          </div>
+        <div className="p-8 min-h-[60vh] max-h-[75vh] overflow-y-auto">
+          {loadingContent ? (
+            <div className="flex justify-center py-12">
+              <Loader className="w-6 h-6 animate-spin text-gray-400" />
+            </div>
+          ) : activeTab === 'transcript' ? (
+            <TranscriptViewer
+              content={tabContent[activeTab]}
+              slides={slides}
+              slidesPath={recording.artifacts?.slides}
+            />
+          ) : (
+            <MarkdownViewer content={tabContent[activeTab]} />
+          )}
         </div>
       </div>
     </Layout>

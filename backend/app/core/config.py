@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     VIDEO_DIR: Path = OUTPUT_DIR / "videos"
 
     # AI Settings
-    WHISPER_MODEL: str = "medium"
+    WHISPER_MODEL: str = "turbo"  # large-v3-turbo - fastest and most accurate
     OLLAMA_BASE_URL: str = "http://localhost:11434"
     OLLAMA_MODEL: str = "gpt-oss:20b"
 
