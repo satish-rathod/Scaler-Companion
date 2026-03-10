@@ -109,7 +109,7 @@ Launch both the backend and dashboard with a single command:
 
 | Service   | URL                          |
 |-----------|------------------------------|
-| Dashboard | http://localhost:5173         |
+| Dashboard | http://localhost:3000         |
 | Backend API | http://localhost:8000      |
 | API Docs (OpenAPI) | http://localhost:8000/api/v1/openapi.json |
 
@@ -128,7 +128,7 @@ Launch both the backend and dashboard with a single command:
 1. **Start the app** -- Run `./start.sh` to launch both the backend and dashboard.
 2. **Navigate** to a Scaler Academy lecture page in Chrome and play the video briefly so the extension captures the HLS stream URL and CloudFront auth tokens.
 3. **Download** -- Click the Scaler Companion extension icon. The popup shows the detected lecture. Click "Download Lecture". Optionally set start/end times to trim the recording.
-4. **Process** -- Once downloaded, open the dashboard at `http://localhost:5173`. Click on a recording and choose which pipeline stages to run (transcription, slide extraction, note generation). Select your preferred models.
+4. **Process** -- Once downloaded, open the dashboard at `http://localhost:3000`. Click on a recording and choose which pipeline stages to run (transcription, slide extraction, note generation). Select your preferred models.
 5. **Review** -- Open the recording in the viewer to read lecture notes, summary, Q&A cards, transcript, and announcements in a tabbed interface.
 6. **Search** -- Use the search page to find concepts across all processed lectures.
 7. **Export** -- Download a ZIP of all artifacts for offline use or import into Obsidian, Notion, etc.
