@@ -4,8 +4,22 @@ import { getRecordings, getArtifact, exportRecording } from '../services/api';
 import Layout from '../components/layout/Layout';
 import MarkdownViewer from '../components/features/viewer/MarkdownViewer';
 import TranscriptViewer from '../components/features/viewer/TranscriptViewer';
-import Tabs from '../components/common/Tabs';
-import { Loader, Download, ArrowLeft, Play } from 'lucide-react';
+import StatusBadge from '../components/features/recording/StatusBadge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Spinner } from '@/components/ui/spinner';
+import { ArrowLeft, Download, Play, FileText, BookOpen, HelpCircle, ScrollText, Megaphone } from 'lucide-react';
+import { toast } from 'sonner';
+
+const tabConfig = [
+  { id: 'notes', label: 'Notes', icon: FileText },
+  { id: 'summary', label: 'Summary', icon: BookOpen },
+  { id: 'qa', label: 'Q&A', icon: HelpCircle },
+  { id: 'transcript', label: 'Transcript', icon: ScrollText },
+  { id: 'announcements', label: 'Announcements', icon: Megaphone },
+];
 
 const ViewerPage = () => {
   const { id } = useParams();
@@ -17,17 +31,14 @@ const ViewerPage = () => {
   const [loadingContent, setLoadingContent] = useState(false);
   const [slides, setSlides] = useState([]);
 
-  // Fetch Recording Metadata
   useEffect(() => {
     const fetchRecording = async () => {
       try {
         const data = await getRecordings();
         const found = data.recordings.find(r => r.id === id);
-        if (found) {
-          setRecording(found);
-        }
+        if (found) setRecording(found);
       } catch (err) {
-        console.error("Failed to load recording", err);
+        console.error('Failed to load recording', err);
       } finally {
         setLoading(false);
       }
@@ -35,31 +46,19 @@ const ViewerPage = () => {
     fetchRecording();
   }, [id]);
 
-  // Fetch slides list
   useEffect(() => {
-    const fetchSlides = async () => {
-      if (!recording?.artifacts?.slides) return;
-      try {
-        // Slides are in /content/{id}/slides/ - fetch list
-        const slidePath = recording.artifacts.slides;
-        // We'll construct slide URLs from 1 to N (assume max 50)
-        const slideUrls = [];
-        for (let i = 1; i <= 50; i++) {
-          slideUrls.push(`http://localhost:8000${slidePath}slide_${String(i).padStart(3, '0')}.jpg`);
-        }
-        setSlides(slideUrls);
-      } catch (err) {
-        console.error("Failed to load slides", err);
-      }
-    };
-    fetchSlides();
+    if (!recording?.artifacts?.slides) return;
+    const slidePath = recording.artifacts.slides;
+    const slideUrls = [];
+    for (let i = 1; i <= 50; i++) {
+      slideUrls.push(`http://localhost:8000${slidePath}slide_${String(i).padStart(3, '0')}.jpg`);
+    }
+    setSlides(slideUrls);
   }, [recording]);
 
-  // Fetch Content when Tab Changes
   useEffect(() => {
     const fetchContent = async () => {
       if (!recording || !recording.artifacts) return;
-
       const artifactMap = {
         notes: recording.artifacts.notes,
         transcript: recording.artifacts.transcript,
@@ -67,9 +66,7 @@ const ViewerPage = () => {
         qa: recording.artifacts.qa_cards,
         announcements: recording.artifacts.announcements,
       };
-
       const path = artifactMap[activeTab];
-
       if (path && !tabContent[activeTab]) {
         setLoadingContent(true);
         try {
@@ -77,43 +74,14 @@ const ViewerPage = () => {
           setTabContent(prev => ({ ...prev, [activeTab]: content }));
         } catch (err) {
           console.error(`Failed to load ${activeTab}`, err);
-          setTabContent(prev => ({ ...prev, [activeTab]: "Content not available." }));
+          setTabContent(prev => ({ ...prev, [activeTab]: 'Content not available.' }));
         } finally {
           setLoadingContent(false);
         }
       }
     };
-
     fetchContent();
   }, [activeTab, recording]);
-
-  if (loading) {
-    return (
-      <Layout>
-        <div className="flex items-center justify-center h-64">
-          <Loader className="w-8 h-8 animate-spin text-blue-500" />
-        </div>
-      </Layout>
-    );
-  }
-
-  if (!recording) {
-    return (
-      <Layout>
-        <div className="text-center py-12">
-          <h2 className="text-xl font-bold text-gray-700">Recording Not Found</h2>
-        </div>
-      </Layout>
-    );
-  }
-
-  const tabs = [
-    { id: 'notes', label: 'Lecture Notes' },
-    { id: 'summary', label: 'Summary' },
-    { id: 'qa', label: 'Q&A Cards' },
-    { id: 'transcript', label: 'Transcript' },
-    { id: 'announcements', label: 'Announcements' },
-  ];
 
   const handleExport = async () => {
     try {
@@ -132,15 +100,41 @@ const ViewerPage = () => {
       link.click();
       link.remove();
     } catch (err) {
-      console.error("Export failed", err);
-      alert("Failed to export recording.");
+      console.error('Export failed', err);
+      toast.error('Failed to export recording');
     }
   };
 
-  // Video URL construction
-  let videoUrl = "";
+  if (loading) {
+    return (
+      <Layout>
+        <div className="space-y-4">
+          <Skeleton className="h-8 w-64" />
+          <Skeleton className="h-4 w-32" />
+          <Skeleton className="h-[60vh] w-full rounded-xl" />
+        </div>
+      </Layout>
+    );
+  }
+
+  if (!recording) {
+    return (
+      <Layout>
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <h2 className="text-xl font-semibold">Recording Not Found</h2>
+          <p className="text-muted-foreground mt-1">This recording may have been deleted.</p>
+          <Button variant="outline" className="mt-4" onClick={() => navigate('/')}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Library
+          </Button>
+        </div>
+      </Layout>
+    );
+  }
+
+  let videoUrl = '';
   if (recording.videoPath) {
-    const parts = recording.videoPath.split("output/");
+    const parts = recording.videoPath.split('output/');
     if (parts.length > 1) {
       videoUrl = `http://localhost:8000/content/${parts[1]}`;
     }
@@ -151,61 +145,77 @@ const ViewerPage = () => {
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <button
-            onClick={() => navigate('/')}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
+          <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">{recording.title}</h1>
-            <p className="text-sm text-gray-500">{recording.date}</p>
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-bold">{recording.title}</h1>
+              <StatusBadge status={recording.status} />
+            </div>
+            <p className="text-sm text-muted-foreground">{recording.date}</p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           {videoUrl && (
-            <a
-              href={videoUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors"
-            >
-              <Play className="w-4 h-4" />
-              Watch Video
-            </a>
+            <Button asChild>
+              <a href={videoUrl} target="_blank" rel="noopener noreferrer">
+                <Play className="mr-2 h-4 w-4" />
+                Watch Video
+              </a>
+            </Button>
           )}
-          <button
-            onClick={handleExport}
-            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
-          >
-            <Download className="w-4 h-4" />
+          <Button variant="outline" onClick={handleExport}>
+            <Download className="mr-2 h-4 w-4" />
             Export
-          </button>
+          </Button>
         </div>
       </div>
 
-      {/* Full-width Content Area */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-        <div className="border-b border-gray-200 px-6 pt-4">
-          <Tabs tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
-        </div>
+      {/* Content Tabs */}
+      <Card>
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <div className="border-b px-6 pt-4">
+            <TabsList className="bg-transparent p-0 h-auto gap-4">
+              {tabConfig.map((tab) => (
+                <TabsTrigger
+                  key={tab.id}
+                  value={tab.id}
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-1 pb-3"
+                >
+                  <tab.icon className="mr-2 h-4 w-4" />
+                  {tab.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </div>
 
-        <div className="p-8 min-h-[60vh] max-h-[75vh] overflow-y-auto">
-          {loadingContent ? (
-            <div className="flex justify-center py-12">
-              <Loader className="w-6 h-6 animate-spin text-gray-400" />
-            </div>
-          ) : activeTab === 'transcript' ? (
-            <TranscriptViewer
-              content={tabContent[activeTab]}
-              slides={slides}
-              slidesPath={recording.artifacts?.slides}
-            />
-          ) : (
-            <MarkdownViewer content={tabContent[activeTab]} />
-          )}
-        </div>
-      </div>
+          {tabConfig.map((tab) => (
+            <TabsContent key={tab.id} value={tab.id} className="mt-0">
+              <CardContent className="p-8 min-h-[60vh] max-h-[75vh] overflow-y-auto">
+                {loadingContent && activeTab === tab.id ? (
+                  <div className="flex justify-center py-12">
+                    <Spinner className="h-6 w-6" />
+                  </div>
+                ) : !tabContent[tab.id] ? (
+                  <div className="flex flex-col items-center justify-center py-20 text-center">
+                    <tab.icon className="h-10 w-10 text-muted-foreground mb-3" />
+                    <p className="text-muted-foreground">No {tab.label.toLowerCase()} available</p>
+                  </div>
+                ) : tab.id === 'transcript' ? (
+                  <TranscriptViewer
+                    content={tabContent[tab.id]}
+                    slides={slides}
+                    slidesPath={recording.artifacts?.slides}
+                  />
+                ) : (
+                  <MarkdownViewer content={tabContent[tab.id]} />
+                )}
+              </CardContent>
+            </TabsContent>
+          ))}
+        </Tabs>
+      </Card>
     </Layout>
   );
 };

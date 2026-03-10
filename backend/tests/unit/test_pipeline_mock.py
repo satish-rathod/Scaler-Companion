@@ -11,7 +11,7 @@ MOCK_PROCESS_REQUEST = {
     "videoPath": "/tmp/mock_video.mp4",
     "options": {},
     "whisperModel": "tiny",
-    "ollamaModel": "mock-model"
+    "llmModel": "mock-model"
 }
 
 @pytest.fixture

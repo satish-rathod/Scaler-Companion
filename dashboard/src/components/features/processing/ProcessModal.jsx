@@ -1,14 +1,36 @@
 import { useState, useEffect } from 'react';
-import { X, Loader } from 'lucide-react';
 import { getModels, startProcessing } from '../../../services/api';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Spinner } from '@/components/ui/spinner';
+import { Separator } from '@/components/ui/separator';
+import { toast } from 'sonner';
 
 const ProcessModal = ({ recording, onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [initializing, setInitializing] = useState(true);
-  const [models, setModels] = useState({ whisper: [], ollama: [] });
+  const [models, setModels] = useState({ whisper: [], llm: [], llmProvider: 'ollama' });
   const [config, setConfig] = useState({
     whisperModel: 'turbo',
-    ollamaModel: '',
+    llmModel: '',
     skipTranscription: false,
     skipFrames: false,
     skipNotes: false,
@@ -19,11 +41,12 @@ const ProcessModal = ({ recording, onClose, onSuccess }) => {
       try {
         const data = await getModels();
         setModels(data);
-        if (data.ollama.length > 0) {
-          setConfig(prev => ({ ...prev, ollamaModel: data.ollama[0] }));
+        if (data.llm && data.llm.length > 0) {
+          setConfig(prev => ({ ...prev, llmModel: data.llm[0] }));
         }
       } catch (err) {
-        console.error("Failed to load models", err);
+        toast.error('Failed to load models');
+        console.error(err);
       } finally {
         setInitializing(false);
       }
@@ -38,113 +61,119 @@ const ProcessModal = ({ recording, onClose, onSuccess }) => {
       await startProcessing({
         title: recording.title,
         videoPath: recording.videoPath,
-        ...config
+        ...config,
       });
+      toast.success('Processing started');
       onSuccess();
       onClose();
     } catch (err) {
-      alert("Failed to start processing: " + err.message);
+      toast.error('Failed to start processing: ' + err.message);
       setLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl w-full max-w-lg p-6 relative shadow-xl">
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
-        >
-          <X className="w-5 h-5" />
-        </button>
-
-        <h2 className="text-xl font-bold mb-6">Process Lecture</h2>
-
-        <div className="mb-6 bg-blue-50 p-3 rounded-lg">
-          <p className="text-sm text-blue-800 font-medium line-clamp-1">
-            Target: {recording.title}
-          </p>
-        </div>
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Process Recording</DialogTitle>
+          <DialogDescription className="truncate">
+            {recording.title}
+          </DialogDescription>
+        </DialogHeader>
 
         {initializing ? (
-          <div className="flex justify-center py-8">
-            <Loader className="w-8 h-8 animate-spin text-blue-500" />
+          <div className="space-y-4 py-4">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-6 w-48" />
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Transcription Model (Whisper)
-              </label>
-              <select
-                value={config.whisperModel}
-                onChange={e => setConfig({ ...config, whisperModel: e.target.value })}
-                className="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              >
-                {models.whisper.map(m => (
-                  <option key={m} value={m}>{m}</option>
-                ))}
-              </select>
+          <form onSubmit={handleSubmit}>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="whisper-model">Transcription Model (Whisper)</Label>
+                <Select
+                  value={config.whisperModel}
+                  onValueChange={(value) => setConfig({ ...config, whisperModel: value })}
+                >
+                  <SelectTrigger id="whisper-model">
+                    <SelectValue placeholder="Select model" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {models.whisper.map((m) => (
+                      <SelectItem key={m} value={m}>{m}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="llm-model">Notes Model</Label>
+                  <Badge variant="outline" className="text-xs">
+                    {models.llmProvider === 'openai' ? 'OpenAI' : 'Ollama'}
+                  </Badge>
+                </div>
+                <Select
+                  value={config.llmModel}
+                  onValueChange={(value) => setConfig({ ...config, llmModel: value })}
+                >
+                  <SelectTrigger id="llm-model">
+                    <SelectValue placeholder="Select model" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(models.llm || []).map((m) => (
+                      <SelectItem key={m} value={m}>{m}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <Separator />
+
+              <div className="space-y-3">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="skip-transcription"
+                    checked={config.skipTranscription}
+                    onCheckedChange={(checked) =>
+                      setConfig({ ...config, skipTranscription: checked })
+                    }
+                  />
+                  <Label htmlFor="skip-transcription" className="font-normal">
+                    Skip Transcription (use existing)
+                  </Label>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="skip-frames"
+                    checked={config.skipFrames}
+                    onCheckedChange={(checked) =>
+                      setConfig({ ...config, skipFrames: checked })
+                    }
+                  />
+                  <Label htmlFor="skip-frames" className="font-normal">
+                    Skip Slide Extraction
+                  </Label>
+                </div>
+              </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Notes Model (Ollama)
-              </label>
-              <select
-                value={config.ollamaModel}
-                onChange={e => setConfig({ ...config, ollamaModel: e.target.value })}
-                className="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              >
-                {models.ollama.map(m => (
-                  <option key={m} value={m}>{m}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="pt-4 border-t border-gray-100 space-y-2">
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={config.skipTranscription}
-                  onChange={e => setConfig({ ...config, skipTranscription: e.target.checked })}
-                  className="rounded text-blue-600"
-                />
-                <span className="text-sm text-gray-600">Skip Transcription (Use existing)</span>
-              </label>
-
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={config.skipFrames}
-                  onChange={e => setConfig({ ...config, skipFrames: e.target.checked })}
-                  className="rounded text-blue-600"
-                />
-                <span className="text-sm text-gray-600">Skip Slide Extraction</span>
-              </label>
-            </div>
-
-            <div className="pt-4 flex gap-3 justify-end">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
-              >
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={onClose}>
                 Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={loading}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
-              >
-                {loading && <Loader className="w-4 h-4 animate-spin" />}
+              </Button>
+              <Button type="submit" disabled={loading}>
+                {loading && <Spinner className="mr-2 h-4 w-4" />}
                 Start Processing
-              </button>
-            </div>
+              </Button>
+            </DialogFooter>
           </form>
         )}
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 };
 

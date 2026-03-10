@@ -1,102 +1,240 @@
 import { useState, useEffect } from 'react';
 import Layout from '../components/layout/Layout';
-import { Save } from 'lucide-react';
+import { Save, Eye, EyeOff } from 'lucide-react';
 import useTheme from '../hooks/useTheme';
+import { getSettings, updateSettings, getProviders, getModels } from '../services/api';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import { Separator } from '@/components/ui/separator';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Spinner } from '@/components/ui/spinner';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { toast } from 'sonner';
 
 const SettingsPage = () => {
   const { theme, toggleTheme } = useTheme();
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [providers, setProviders] = useState({});
+  const [models, setModels] = useState([]);
   const [settings, setSettings] = useState({
-    autoProcess: false,
-    defaultWhisperModel: 'turbo',
-    defaultOllamaModel: 'gpt-oss:20b'
+    llmProvider: 'ollama',
+    llmModel: '',
+    ollamaBaseUrl: 'http://localhost:11434',
+    openaiApiKey: '',
   });
 
   useEffect(() => {
-    const saved = localStorage.getItem('scaler_settings');
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      // Remove theme from state as it's handled by hook
-      delete parsed.theme;
-      setSettings(prev => ({ ...prev, ...parsed }));
-    }
+    const load = async () => {
+      try {
+        const [settingsData, providersData, modelsData] = await Promise.all([
+          getSettings(),
+          getProviders(),
+          getModels(),
+        ]);
+        setSettings(settingsData);
+        setProviders(providersData);
+        setModels(modelsData.llm || []);
+      } catch (err) {
+        console.error('Failed to load settings:', err);
+        toast.error('Failed to load settings');
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
   }, []);
 
-  const handleSave = () => {
-    // Preserve theme in storage via hook logic, but here we save other settings
-    // Actually the hook manages 'theme' key in same storage object potentially?
-    // Let's keep them separate or merge carefully.
-    // The hook writes to 'scaler_settings'. We should read current, update fields, write back.
-    const current = JSON.parse(localStorage.getItem('scaler_settings') || '{}');
-    const updated = { ...current, ...settings };
-    localStorage.setItem('scaler_settings', JSON.stringify(updated));
-    alert('Settings saved!');
+  const handleProviderChange = (provider) => {
+    setSettings(prev => ({ ...prev, llmProvider: provider }));
   };
+
+  const handleTestConnection = async () => {
+    setTesting(true);
+    try {
+      const data = await getProviders();
+      setProviders(data);
+      const active = data[settings.llmProvider];
+      if (active?.connected) {
+        toast.success('Connection successful!');
+      } else {
+        toast.error(active?.reason || 'Connection failed');
+      }
+    } catch (err) {
+      toast.error('Connection test failed: ' + err.message);
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await updateSettings(settings);
+      const modelsData = await getModels();
+      setModels(modelsData.llm || []);
+      toast.success('Settings saved');
+    } catch (err) {
+      const detail = err.response?.data?.detail || err.message;
+      toast.error('Failed to save: ' + detail);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="max-w-2xl mx-auto space-y-6">
+          <Skeleton className="h-8 w-32" />
+          <Skeleton className="h-64 w-full rounded-xl" />
+          <Skeleton className="h-32 w-full rounded-xl" />
+        </div>
+      </Layout>
+    );
+  }
+
+  const isConnected = providers[settings.llmProvider]?.connected;
 
   return (
     <Layout>
-      <div className="max-w-2xl mx-auto">
-        <h2 className="text-2xl font-bold text-gray-900 mb-8">Settings</h2>
+      <div className="max-w-2xl mx-auto space-y-6">
+        <h2 className="text-2xl font-bold">Settings</h2>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-6">
-
-          <div>
-            <h3 className="font-medium text-notion-text mb-4">Appearance</h3>
-            <div className="flex items-center justify-between p-4 border border-notion-border rounded-lg">
-              <span className="text-sm font-medium text-notion-text">Dark Mode</span>
-              <button
-                onClick={toggleTheme}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${theme === 'dark' ? 'bg-blue-600' : 'bg-gray-200'
-                  }`}
-              >
-                <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${theme === 'dark' ? 'translate-x-6' : 'translate-x-1'
-                    }`}
-                />
-              </button>
-            </div>
-          </div>
-
-          <div>
-            <h3 className="font-medium text-notion-text mb-4">Defaults</h3>
-            <div className="grid gap-4">
-              <div>
-                <label className="block text-sm font-medium text-notion-text mb-1">
-                  Default Whisper Model
-                </label>
-                <select
-                  value={settings.defaultWhisperModel}
-                  onChange={e => setSettings({ ...settings, defaultWhisperModel: e.target.value })}
-                  className="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+        {/* LLM Provider Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle>LLM Provider</CardTitle>
+            <CardDescription>Configure the AI model used for generating notes and summaries</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            {/* Provider Toggle */}
+            <div className="flex gap-3">
+              {['ollama', 'openai'].map((p) => (
+                <Button
+                  key={p}
+                  variant={settings.llmProvider === p ? 'default' : 'outline'}
+                  className="flex-1 h-auto py-3 flex-col"
+                  onClick={() => handleProviderChange(p)}
                 >
-                  <option value="tiny">Tiny (Fastest)</option>
-                  <option value="base">Base</option>
-                  <option value="small">Small</option>
-                  <option value="medium">Medium (Balanced)</option>
-                  <option value="large">Large (Best Quality)</option>
-                </select>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={settings.autoProcess}
-                  onChange={e => setSettings({ ...settings, autoProcess: e.target.checked })}
-                  className="rounded text-blue-600"
-                />
-                <span className="text-sm text-gray-700">Auto-process downloads when finished</span>
-              </div>
+                  <span className="font-semibold">{p === 'ollama' ? 'Ollama' : 'OpenAI'}</span>
+                  <span className="text-xs opacity-70 mt-0.5">
+                    {p === 'ollama' ? 'Local / Free' : 'Cloud / API Key'}
+                  </span>
+                </Button>
+              ))}
             </div>
-          </div>
 
-          <div className="pt-4 border-t border-gray-100 flex justify-end">
-            <button
-              onClick={handleSave}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-            >
-              <Save className="w-4 h-4" />
-              Save Changes
-            </button>
-          </div>
+            <Separator />
+
+            {/* Provider Config */}
+            {settings.llmProvider === 'ollama' ? (
+              <div className="space-y-2">
+                <Label htmlFor="ollama-url">Ollama Base URL</Label>
+                <Input
+                  id="ollama-url"
+                  value={settings.ollamaBaseUrl}
+                  onChange={(e) => setSettings({ ...settings, ollamaBaseUrl: e.target.value })}
+                  placeholder="http://localhost:11434"
+                />
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label htmlFor="api-key">OpenAI API Key</Label>
+                <div className="relative">
+                  <Input
+                    id="api-key"
+                    type={showApiKey ? 'text' : 'password'}
+                    value={settings.openaiApiKey}
+                    onChange={(e) => setSettings({ ...settings, openaiApiKey: e.target.value })}
+                    placeholder="sk-..."
+                    className="pr-10"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-0 top-0 h-full px-3"
+                    onClick={() => setShowApiKey(!showApiKey)}
+                  >
+                    {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Connection Status */}
+            <div className="flex items-center justify-between">
+              <Badge variant={isConnected ? 'default' : 'destructive'} className={isConnected ? 'bg-green-600 hover:bg-green-600' : ''}>
+                {isConnected ? 'Connected' : 'Not connected'}
+              </Badge>
+              <Button variant="outline" size="sm" onClick={handleTestConnection} disabled={testing}>
+                {testing && <Spinner className="mr-2 h-3 w-3" />}
+                Test Connection
+              </Button>
+            </div>
+
+            <Separator />
+
+            {/* Model Selector */}
+            <div className="space-y-2">
+              <Label>Default Model</Label>
+              {models.length > 0 ? (
+                <Select
+                  value={settings.llmModel}
+                  onValueChange={(value) => setSettings({ ...settings, llmModel: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a model" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {models.map((m) => (
+                      <SelectItem key={m} value={m}>{m}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <p className="text-sm text-muted-foreground">No models available. Check your provider connection.</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Appearance Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Appearance</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="dark-mode">Dark Mode</Label>
+              <Switch
+                id="dark-mode"
+                checked={theme === 'dark'}
+                onCheckedChange={toggleTheme}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Save Button */}
+        <div className="flex justify-end">
+          <Button onClick={handleSave} disabled={saving}>
+            {saving ? <Spinner className="mr-2 h-4 w-4" /> : <Save className="mr-2 h-4 w-4" />}
+            Save Settings
+          </Button>
         </div>
       </div>
     </Layout>

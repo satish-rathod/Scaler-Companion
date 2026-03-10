@@ -1,5 +1,5 @@
 /**
- * Lecture Companion - Popup Script
+ * Scaler Companion - Popup Script
  * Handles UI interactions, persistent progress, and backend communication
  */
 
@@ -24,7 +24,8 @@ const elements = {
     offlineBanner: document.getElementById('offlineBanner'),
 
     // Header
-    statusDot: document.getElementById('statusDot'),
+    statusIndicator: document.getElementById('statusIndicator'),
+    statusLabel: document.getElementById('statusLabel'),
 
     // States
     emptyState: document.getElementById('emptyState'),
@@ -116,7 +117,7 @@ function showActiveDownload(downloadJob) {
 
     // Set title
     elements.lectureTitle.textContent = downloadJob.title || 'Downloading...';
-    elements.lectureMeta.textContent = 'Download in progress';
+    setMetaText('Download in progress');
 
     // Hide inputs and download button
     elements.timeInputs.style.display = 'none';
@@ -157,11 +158,13 @@ function setBackendOnline(isOnline) {
 
     if (isOnline) {
         elements.offlineBanner.classList.remove('visible');
-        elements.statusDot.classList.remove('offline');
+        elements.statusIndicator.classList.remove('offline');
+        elements.statusLabel.textContent = 'Online';
         elements.downloadBtn.disabled = false;
     } else {
         elements.offlineBanner.classList.add('visible');
-        elements.statusDot.classList.add('offline');
+        elements.statusIndicator.classList.add('offline');
+        elements.statusLabel.textContent = 'Offline';
         elements.downloadBtn.disabled = true;
     }
 }
@@ -250,15 +253,27 @@ async function showLecture(lectureInfo) {
 
     // Update meta based on stream status
     if (lectureInfo.streamInfo?.baseUrl) {
-        elements.lectureMeta.textContent = '✓ Stream captured - Ready to download';
+        setMetaText('Stream captured — Ready to download');
         elements.downloadBtn.disabled = !isBackendOnline;
     } else {
-        elements.lectureMeta.textContent = '⏳ Play video to capture stream...';
+        setMetaText('Play video to capture stream...');
         elements.downloadBtn.disabled = true;
     }
 
     // Check if already downloaded
     await checkIfDownloaded(lectureInfo.title);
+}
+
+// ============================================
+// Meta Text Helper
+// ============================================
+function setMetaText(text) {
+    const metaSpan = elements.lectureMeta.querySelector('span');
+    if (metaSpan) {
+        metaSpan.textContent = text;
+    } else {
+        elements.lectureMeta.textContent = text;
+    }
 }
 
 // ============================================
@@ -273,7 +288,10 @@ async function checkIfDownloaded(title) {
 
         if (data.exists) {
             elements.downloadedBadge.style.display = 'inline-flex';
-            elements.downloadedBadge.textContent = data.status === 'processed' ? '✓ Processed' : '✓ Downloaded';
+            const badgeText = elements.downloadedBadge.querySelector('span:last-child');
+            if (badgeText) {
+                badgeText.textContent = data.status === 'processed' ? 'Processed' : 'Downloaded';
+            }
 
             // Hide download controls, show dashboard button
             elements.timeInputs.style.display = 'none';
@@ -282,9 +300,9 @@ async function checkIfDownloaded(title) {
 
             // Update meta to reflect status
             if (data.status === 'processed') {
-                elements.lectureMeta.textContent = '✓ Notes ready in dashboard';
+                setMetaText('Notes ready in dashboard');
             } else {
-                elements.lectureMeta.textContent = '✓ Downloaded - ready to process';
+                setMetaText('Downloaded — ready to process');
             }
         } else {
             elements.downloadedBadge.style.display = 'none';
@@ -319,7 +337,7 @@ async function handleDownload() {
     }
 
     if (!freshStreamInfo?.baseUrl && !freshStreamInfo?.streamUrl) {
-        elements.lectureMeta.textContent = '⚠️ Play video first to capture stream';
+        setMetaText('Play video first to capture stream');
         return;
     }
 
@@ -338,7 +356,8 @@ async function handleDownload() {
     elements.downloadBtn.disabled = true;
     elements.timeInputs.style.display = 'none';
     elements.progressSection.style.display = 'block';
-    elements.statusDot.classList.add('processing');
+    elements.statusIndicator.classList.add('processing');
+    elements.statusLabel.textContent = 'Active';
     updateProgressUI(0, 'Starting download...');
 
     try {
@@ -352,7 +371,7 @@ async function handleDownload() {
     } catch (error) {
         console.error('[Popup] Download error:', error);
         resetToReady();
-        elements.lectureMeta.textContent = '⚠️ ' + error.message;
+        setMetaText(error.message);
     }
 }
 
@@ -402,31 +421,33 @@ function updateProgressUI(percent, message) {
 function onDownloadComplete(downloadJob) {
     console.log('[Popup] Download complete:', downloadJob);
 
-    elements.statusDot.classList.remove('processing');
+    elements.statusIndicator.classList.remove('processing');
+    elements.statusLabel.textContent = 'Online';
     elements.progressSection.style.display = 'none';
     elements.postDownload.style.display = 'flex';
 
     // Update badge
     elements.downloadedBadge.style.display = 'inline-flex';
-    elements.downloadedBadge.textContent = '✓ Downloaded';
+    const badgeText = elements.downloadedBadge.querySelector('span:last-child');
+    if (badgeText) badgeText.textContent = 'Downloaded';
 }
 
 function onDownloadError(errorMessage) {
     console.error('[Popup] Download error:', errorMessage);
 
-    elements.statusDot.classList.remove('processing');
+    elements.statusIndicator.classList.remove('processing');
+    elements.statusLabel.textContent = 'Online';
     elements.progressSection.style.display = 'none';
 
-    elements.lectureMeta.textContent = '⚠️ ' + (errorMessage || 'Download failed');
+    setMetaText(errorMessage || 'Download failed');
 
     resetToReady();
 }
 
 function resetToReady() {
     elements.timeInputs.style.display = 'flex';
-    elements.downloadBtn.style.display = 'block';
+    elements.downloadBtn.style.display = 'flex';
     elements.downloadBtn.disabled = !isBackendOnline;
-    elements.downloadBtn.innerHTML = '<span class="btn-icon">↓</span> Download Lecture';
     elements.progressSection.style.display = 'none';
     elements.postDownload.style.display = 'none';
 }

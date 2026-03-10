@@ -15,6 +15,11 @@ class Settings(BaseSettings):
     OLLAMA_BASE_URL: str = "http://localhost:11434"
     OLLAMA_MODEL: str = "gpt-oss:20b"
 
+    # LLM Provider Settings
+    LLM_PROVIDER: str = "ollama"       # "ollama" or "openai"
+    LLM_MODEL: str = "gpt-oss:20b"    # Default model for active provider
+    OPENAI_API_KEY: str = ""           # OpenAI API key
+
     class Config:
         env_file = ".env"
 

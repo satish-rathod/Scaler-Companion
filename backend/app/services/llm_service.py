@@ -1,41 +1,58 @@
-import ollama
-from typing import Dict, Any, List
-from app.core.config import settings
+from typing import Dict, List, Optional
+from app.services.llm import get_provider, LLMProvider
+from app.core.config_store import config_store
 
-class OllamaService:
-    def __init__(self):
-        self.base_url = settings.OLLAMA_BASE_URL
-        self.model = settings.OLLAMA_MODEL
-        self.chunk_size = 8000  # Characters per chunk
-        self.chunk_overlap = 500  # Overlap between chunks for context
+
+class LLMService:
+    """Orchestration layer for LLM operations.
+
+    Handles chunking, prompt templates, and knowledge base building.
+    Delegates raw text generation to the active LLMProvider.
+    """
+
+    def __init__(self, provider_name: Optional[str] = None, model: Optional[str] = None):
+        name = provider_name or config_store.get("LLM_PROVIDER")
+
+        if name == "openai":
+            from app.services.llm.openai_provider import OpenAIProvider
+            api_key = config_store.get("OPENAI_API_KEY")
+            default_model = model or config_store.get("LLM_MODEL") or "gpt-4o"
+            self.provider = OpenAIProvider(api_key=api_key, default_model=default_model)
+        elif name == "ollama":
+            from app.services.llm.ollama_provider import OllamaProvider
+            base_url = config_store.get("OLLAMA_BASE_URL")
+            default_model = model or config_store.get("LLM_MODEL") or "gpt-oss:20b"
+            self.provider = OllamaProvider(base_url=base_url, default_model=default_model)
+        else:
+            self.provider = get_provider(name)
+
+        self._model_override = model
+        self.chunk_size = 8000
+        self.chunk_overlap = 500
 
     def _chunk_text(self, text: str) -> List[str]:
-        """Split text into overlapping chunks for processing."""
         if len(text) <= self.chunk_size:
             return [text]
-        
+
         chunks = []
         start = 0
         while start < len(text):
             end = start + self.chunk_size
-            
-            # Try to break at sentence boundary
+
             if end < len(text):
-                # Look for sentence end in last 500 chars
-                search_zone = text[end-500:end]
+                search_zone = text[end - 500:end]
                 for sep in ['. ', '.\n', '? ', '!\n', '! ']:
                     last_sep = search_zone.rfind(sep)
                     if last_sep != -1:
                         end = end - 500 + last_sep + len(sep)
                         break
-            
+
             chunks.append(text[start:end])
-            start = end - self.chunk_overlap  # Overlap for context continuity
-        
+            start = end - self.chunk_overlap
+
         return chunks
 
     def _extract_knowledge_from_chunk(self, chunk: str, chunk_num: int, total_chunks: int) -> str:
-        """Extract key knowledge points from a single chunk."""
         prompt = f"""You are extracting key knowledge from part {chunk_num} of {total_chunks} of a lecture transcript.
 
 ## Instructions:
@@ -57,53 +74,38 @@ Do NOT add filler text - only extract actual content.
 Extract the key knowledge now:"""
 
         try:
-            resp = ollama.generate(model=self.model, prompt=prompt)
-            return resp['response']
+            return self.provider.generate_text(prompt, model=self._model_override)
         except Exception as e:
             print(f"Error extracting from chunk {chunk_num}: {e}")
             return f"[Error processing chunk {chunk_num}]"
 
     def _build_knowledge_base(self, transcript: str, slides_context: str = "") -> str:
-        """Build a condensed knowledge base from full transcript using chunking."""
         chunks = self._chunk_text(transcript)
-        
+
         if len(chunks) == 1:
-            # Short transcript, use directly
-            print(f"[Ollama] Short transcript ({len(transcript)} chars), using directly")
+            print(f"[LLMService] Short transcript ({len(transcript)} chars), using directly")
             return transcript + ("\n\n## Slide Context:\n" + slides_context if slides_context else "")
-        
-        print(f"[Ollama] Long transcript ({len(transcript)} chars), splitting into {len(chunks)} chunks...")
-        
-        # Process each chunk
+
+        print(f"[LLMService] Long transcript ({len(transcript)} chars), splitting into {len(chunks)} chunks...")
+
         knowledge_parts = []
         for i, chunk in enumerate(chunks, 1):
-            print(f"[Ollama] Processing chunk {i}/{len(chunks)}...")
+            print(f"[LLMService] Processing chunk {i}/{len(chunks)}...")
             knowledge = self._extract_knowledge_from_chunk(chunk, i, len(chunks))
             knowledge_parts.append(f"## Section {i}\n{knowledge}")
-        
-        # Combine all extracted knowledge
+
         combined_knowledge = "\n\n".join(knowledge_parts)
-        
-        # Add slides context
+
         if slides_context:
             combined_knowledge += f"\n\n## Slide Text (OCR):\n{slides_context}"
-        
-        print(f"[Ollama] Built knowledge base: {len(combined_knowledge)} chars from {len(transcript)} chars transcript")
+
+        print(f"[LLMService] Built knowledge base: {len(combined_knowledge)} chars from {len(transcript)} chars transcript")
         return combined_knowledge
 
-    def generate_notes(self, transcript_text: str, slides_context: str = "") -> Dict[str, str]:
-        """
-        Generate structured notes from transcript and slide context.
-        Uses chunking for long transcripts to build a knowledge base first.
-        Returns dict with keys: 'notes', 'summary', 'qa', 'announcements'.
-        """
-
-        # Step 1: Build condensed knowledge base from full transcript
+    def generate_notes(self, transcript_text: str, slides_context: str = "", model: Optional[str] = None) -> Dict[str, str]:
+        effective_model = model or self._model_override
         knowledge_base = self._build_knowledge_base(transcript_text, slides_context)
 
-        # ============================================================
-        # 1. LECTURE NOTES - Comprehensive, structured, detailed
-        # ============================================================
         notes_prompt = f"""You are an expert academic note-taker. Create comprehensive, well-structured lecture notes.
 
 ## Instructions:
@@ -128,9 +130,6 @@ Extract the key knowledge now:"""
 ---
 Generate comprehensive lecture notes:"""
 
-        # ============================================================
-        # 2. SUMMARY - Executive overview
-        # ============================================================
         summary_prompt = f"""You are an expert summarizer. Create a comprehensive executive summary.
 
 ## Instructions:
@@ -147,9 +146,6 @@ Write 400-600 words in prose form (no bullet points).
 ---
 Generate executive summary:"""
 
-        # ============================================================
-        # 3. Q&A FLASHCARDS
-        # ============================================================
         qa_prompt = f"""You are creating study flashcards. Generate 15-20 Q&A pairs.
 
 ## Instructions:
@@ -166,9 +162,6 @@ Generate executive summary:"""
 ---
 Generate Q&A flashcards:"""
 
-        # ============================================================
-        # 4. ANNOUNCEMENTS
-        # ============================================================
         announcements_prompt = f"""Extract announcements and action items from this lecture.
 
 ## Look for:
@@ -179,14 +172,14 @@ Generate Q&A flashcards:"""
 5. **Schedule changes**
 
 ## Format:
-### 📅 Deadlines
+### Deadlines
 | Date | Item | Details |
 |------|------|---------|
 
-### ⚡ Action Items
+### Action Items
 - [ ] [Task]
 
-### 📚 Resources
+### Resources
 - [Resource]: [Description]
 
 If no announcements found, state "No specific announcements in this lecture."
@@ -198,32 +191,31 @@ If no announcements found, state "No specific announcements in this lecture."
 Extract announcements:"""
 
         try:
-            print("[Ollama] Generating Lecture Notes...")
-            notes_resp = ollama.generate(model=self.model, prompt=notes_prompt)
+            print("[LLMService] Generating Lecture Notes...")
+            notes = self.provider.generate_text(notes_prompt, model=effective_model)
 
-            print("[Ollama] Generating Summary...")
-            summary_resp = ollama.generate(model=self.model, prompt=summary_prompt)
+            print("[LLMService] Generating Summary...")
+            summary = self.provider.generate_text(summary_prompt, model=effective_model)
 
-            print("[Ollama] Generating Q&A Cards...")
-            qa_resp = ollama.generate(model=self.model, prompt=qa_prompt)
+            print("[LLMService] Generating Q&A Cards...")
+            qa = self.provider.generate_text(qa_prompt, model=effective_model)
 
-            print("[Ollama] Generating Announcements...")
-            announcements_resp = ollama.generate(model=self.model, prompt=announcements_prompt)
+            print("[LLMService] Generating Announcements...")
+            announcements = self.provider.generate_text(announcements_prompt, model=effective_model)
 
             return {
-                "notes": notes_resp['response'],
-                "summary": summary_resp['response'],
-                "qa": qa_resp['response'],
-                "announcements": announcements_resp['response']
+                "notes": notes,
+                "summary": summary,
+                "qa": qa,
+                "announcements": announcements,
             }
 
         except Exception as e:
-            print(f"Ollama generation error: {e}")
-            raise e
+            print(f"LLM generation error: {e}")
+            raise
 
-    def list_models(self):
-        try:
-            return ollama.list()
-        except Exception as e:
-            print(f"Error listing Ollama models: {e}")
-            return []
+    def list_models(self) -> List[str]:
+        return self.provider.list_models()
+
+    def validate_connection(self) -> bool:
+        return self.provider.validate_connection()

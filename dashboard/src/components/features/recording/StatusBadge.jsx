@@ -1,22 +1,24 @@
-import clsx from 'clsx';
+import { Badge } from '@/components/ui/badge';
+
+const statusConfig = {
+  processed: { variant: 'default', className: 'bg-green-600 hover:bg-green-600' },
+  complete: { variant: 'default', className: 'bg-green-600 hover:bg-green-600' },
+  downloaded: { variant: 'secondary', className: '' },
+  downloading: { variant: 'secondary', className: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' },
+  processing: { variant: 'secondary', className: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' },
+  queued: { variant: 'outline', className: '' },
+  waiting: { variant: 'outline', className: '' },
+  error: { variant: 'destructive', className: '' },
+  failed: { variant: 'destructive', className: '' },
+};
 
 const StatusBadge = ({ status }) => {
-  const colors = {
-    processed: "bg-green-100 text-green-800",
-    downloaded: "bg-blue-100 text-blue-800",
-    downloading: "bg-gray-100 text-gray-600",
-    processing: "bg-orange-100 text-orange-800",
-    queued: "bg-gray-100 text-gray-600",
-    error: "bg-red-100 text-red-800",
-  };
+  const config = statusConfig[status] || statusConfig.queued;
 
   return (
-    <span className={clsx(
-      "px-1.5 py-0.5 rounded text-[10px] font-medium uppercase tracking-wide",
-      colors[status] || colors.queued
-    )}>
+    <Badge variant={config.variant} className={config.className}>
       {status}
-    </span>
+    </Badge>
   );
 };
 

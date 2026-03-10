@@ -44,7 +44,7 @@ async def run_processing_job(process_id: str, request: ProcessRequest):
         try:
             pipeline = ProcessingPipeline(
                 whisper_model=request.whisperModel,
-                ollama_model=request.ollamaModel
+                llm_model=request.llmModel,
             )
 
             def progress_callback(stage: str, current: int, total: int, message: str):

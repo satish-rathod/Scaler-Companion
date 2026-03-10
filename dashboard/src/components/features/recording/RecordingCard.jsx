@@ -1,13 +1,21 @@
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
-import { FileText, MoreHorizontal } from 'lucide-react';
+import { FileText, Play, Trash2, Eye, MoreVertical } from 'lucide-react';
+import { Card, CardHeader, CardTitle, CardAction, CardContent } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import StatusBadge from './StatusBadge';
 
 const RecordingCard = ({ recording, onDelete, onProcess }) => {
   const navigate = useNavigate();
-
-  // Check if recording is fully processed (backend returns 'complete' when done)
   const isProcessed = recording.status === 'complete' || recording.status === 'processed';
+  const isActive = recording.status === 'downloading' || recording.status === 'processing';
 
   const handleCardClick = () => {
     if (isProcessed) {
@@ -18,52 +26,60 @@ const RecordingCard = ({ recording, onDelete, onProcess }) => {
   };
 
   return (
-    <div
-      className="group relative flex flex-col gap-2 p-2 rounded-md hover:bg-notion-hover transition-colors cursor-pointer"
+    <Card
+      className="cursor-pointer hover:shadow-md transition-shadow"
       onClick={handleCardClick}
     >
-      {/* Cover / Icon Area */}
-      <div className="h-32 w-full bg-notion-sidebar rounded-md border border-notion-border flex items-center justify-center relative overflow-hidden">
-        {isProcessed ? (
-          <div className="text-4xl">📄</div>
-        ) : (
-          <div className="text-4xl opacity-50">⬇️</div>
-        )}
-
-        {/* Progress Overlay */}
-        {recording.progress > 0 && recording.progress < 100 && (
-          <div className="absolute bottom-0 left-0 right-0 h-1 bg-notion-border">
-            <div
-              className="h-full bg-blue-500 transition-all duration-300"
-              style={{ width: `${recording.progress}%` }}
-            />
+      <CardHeader>
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <FileText className="h-5 w-5" />
           </div>
-        )}
-      </div>
+          <CardTitle className="truncate text-sm">{recording.title}</CardTitle>
+        </div>
+        <CardAction onClick={(e) => e.stopPropagation()}>
+          <DropdownMenu>
+            <DropdownMenuTrigger render={<Button variant="ghost" size="icon" className="h-8 w-8" />}>
+              <MoreVertical className="h-4 w-4" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {isProcessed && (
+                <DropdownMenuItem onClick={() => navigate(`/recording/${recording.id}`)}>
+                  <Eye className="mr-2 h-4 w-4" />
+                  View
+                </DropdownMenuItem>
+              )}
+              {recording.status === 'downloaded' && (
+                <DropdownMenuItem onClick={() => onProcess?.(recording)}>
+                  <Play className="mr-2 h-4 w-4" />
+                  Process
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem
+                className="text-destructive"
+                onClick={() => onDelete(recording.id)}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </CardAction>
+      </CardHeader>
 
-      <div className="flex flex-col gap-1">
-        <h3 className="font-medium text-notion-text text-sm truncate group-hover:underline decoration-notion-dim underline-offset-4">
-          {recording.title}
-        </h3>
-
+      <CardContent className="space-y-3">
         <div className="flex items-center justify-between">
-          <span className="text-xs text-notion-dim">
+          <span className="text-xs text-muted-foreground">
             {format(new Date(recording.date || Date.now()), 'MMM d, yyyy')}
           </span>
           <StatusBadge status={recording.status} />
         </div>
-      </div>
 
-      {/* Hover Actions (Notion style: appears on hover) */}
-      <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
-        <button
-          onClick={(e) => { e.stopPropagation(); onDelete(recording.id); }}
-          className="p-1 rounded hover:bg-white/50 text-notion-dim hover:text-red-500"
-        >
-          <MoreHorizontal className="w-4 h-4" />
-        </button>
-      </div>
-    </div>
+        {isActive && recording.progress > 0 && (
+          <Progress value={recording.progress} className="h-1.5" />
+        )}
+      </CardContent>
+    </Card>
   );
 };
 
