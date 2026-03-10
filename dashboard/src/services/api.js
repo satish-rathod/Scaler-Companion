@@ -56,4 +56,19 @@ export const exportRecording = async (id) => {
   return response;
 };
 
+export const getSettings = async () => {
+  const response = await api.get('/v1/settings');
+  return response.data;
+};
+
+export const updateSettings = async (data) => {
+  const response = await api.put('/v1/settings', data);
+  return response.data;
+};
+
+export const getProviders = async () => {
+  const response = await api.get('/v1/settings/providers');
+  return response.data;
+};
+
 export default api;
