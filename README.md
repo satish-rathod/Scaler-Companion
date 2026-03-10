@@ -1,27 +1,28 @@
 # Scaler Companion
 
-A local-first lecture processing toolkit for Scaler Academy students. Scaler Companion captures HLS video streams directly from the browser, downloads them, and runs a fully local AI pipeline to produce transcripts, structured lecture notes, summaries, Q&A flashcards, and slide OCR -- all without sending any data to the cloud.
+A local-first lecture processing toolkit for Scaler Academy students. Captures HLS video streams from the browser, downloads them locally, and runs an AI pipeline to produce transcripts, structured notes, summaries, Q&A flashcards, and slide OCR.
 
-The system is composed of three parts: a **Chrome Extension** that intercepts and captures authenticated HLS streams on Scaler Academy pages, a **FastAPI backend** that orchestrates downloading, transcription (OpenAI Whisper), slide extraction and OCR (EasyOCR), and note generation (Ollama LLM), and a **React dashboard** for browsing, reading, searching, and exporting the resulting study materials.
+Three components work together: a **Chrome Extension** that intercepts HLS streams on Scaler Academy pages, a **FastAPI backend** that orchestrates downloading and AI processing, and a **React dashboard** for browsing and exporting study materials.
 
 ---
 
 ## Features
 
-- **One-Click Stream Capture** -- The Chrome Extension detects HLS streams and CloudFront authentication cookies on Scaler Academy pages automatically. Click download in the popup and the backend handles the rest.
-- **Local Transcription** -- Audio is extracted with FFmpeg and transcribed using OpenAI Whisper running entirely on your machine (CPU or CUDA GPU). The default model is `turbo` (large-v3-turbo) for the best speed/accuracy trade-off.
-- **Slide Extraction and OCR** -- Frames are sampled from the video at fixed intervals, deduplicated using perceptual hashing (imagehash), and the unique slides are OCR'd with EasyOCR.
-- **AI-Generated Study Materials** -- Transcripts and slide text are fed into a local LLM via Ollama to produce:
+- **One-Click Stream Capture** -- The Chrome Extension detects HLS streams and CloudFront auth tokens on Scaler Academy pages automatically. Click download and the backend handles the rest.
+- **Local Transcription** -- Audio extracted with FFmpeg, transcribed using OpenAI Whisper on your machine (CPU or CUDA GPU). Default model: `turbo` (large-v3-turbo).
+- **Slide Extraction & OCR** -- Frames sampled at fixed intervals, deduplicated via perceptual hashing, OCR'd with EasyOCR.
+- **AI-Generated Study Materials** -- Transcripts and slide text fed into an LLM (Ollama local or OpenAI cloud) to produce:
   - Comprehensive, hierarchical lecture notes
   - Executive summary (400-600 words)
   - 15-20 Q&A flashcards for self-testing
   - Extracted announcements, deadlines, and action items
-- **Notion-Style Dashboard** -- A clean React interface for browsing your lecture library, reading generated materials with Markdown rendering, and viewing transcripts alongside extracted slides.
-- **Full-Text Search** -- Search across all transcripts and lecture notes to find concepts instantly.
-- **Dark Mode** -- Toggle between light and dark themes.
-- **ZIP Export** -- Download all artifacts for any lecture as a ZIP archive, ready for Obsidian, Notion, or any other note-taking tool.
-- **Background Processing Queue** -- Jobs are queued and processed sequentially so you can submit multiple lectures without waiting.
-- **macOS Sleep Prevention** -- Automatically invokes `caffeinate` to prevent idle sleep during long processing runs.
+- **Provider-Agnostic LLM** -- Choose between Ollama (local/free) or OpenAI (cloud/API key) for note generation. Switch providers and models from the Settings page.
+- **Dashboard** -- Clean React interface built with shadcn/ui for browsing your lecture library, reading materials with Markdown rendering, and viewing transcripts alongside slides.
+- **Full-Text Search** -- Search across all transcripts and notes to find concepts instantly.
+- **Dark Mode** -- Persistent light/dark theme toggle.
+- **ZIP Export** -- Download all artifacts as a ZIP archive for Obsidian, Notion, or other tools.
+- **Background Queue** -- Jobs queued and processed sequentially. Submit multiple lectures without waiting.
+- **macOS Sleep Prevention** -- Automatically invokes `caffeinate` during long processing runs.
 
 ---
 
@@ -66,14 +67,13 @@ brew install ffmpeg
 sudo apt install ffmpeg
 ```
 
-**Ollama:**
+**Ollama** (optional -- only if using local LLM):
 
 Install from [https://ollama.ai](https://ollama.ai), then pull a model:
 ```bash
 ollama pull llama3
-# or the default used by the project:
-ollama pull gpt-oss:20b
 ```
+> You can also use OpenAI instead of Ollama. Configure your provider in the dashboard Settings page.
 
 ---
 
@@ -115,24 +115,31 @@ Launch both the backend and dashboard with a single command:
 
 ### 4. Install the Chrome Extension
 
-1. Open Chrome and navigate to `chrome://extensions`
+1. Open Chrome and go to `chrome://extensions`
 2. Enable **Developer Mode** (toggle in the top-right corner)
 3. Click **Load unpacked**
 4. Select the `extension/` folder from this repository
-
-The extension will automatically detect HLS streams when you visit Scaler Academy lecture pages.
+5. Pin the extension to your toolbar for easy access
 
 ---
 
 ## Usage Workflow
 
-1. **Navigate** to a Scaler Academy lecture page in Chrome and play the video briefly so the extension can capture the HLS stream URL and CloudFront authentication tokens.
-2. **Click** the Scaler Companion extension icon. The popup will show the detected lecture and stream information.
-3. **Download** -- click the download button. The backend downloads `.ts` chunks concurrently via `httpx`, then merges them into a single `.mp4` with FFmpeg.
-4. **Process** -- from the dashboard home page, click the process button on a downloaded recording. Choose which pipeline stages to run (transcription, slide extraction, note generation) and select your preferred Whisper and Ollama models.
-5. **Review** -- open the recording in the viewer to read through lecture notes, summary, Q&A cards, transcript, and announcements in a tabbed interface with Markdown rendering.
-6. **Search** -- use the search page to find concepts across all processed lectures.
-7. **Export** -- download a ZIP of all artifacts for offline use or import into other tools.
+1. **Start the app** -- Run `./start.sh` to launch both the backend and dashboard.
+2. **Navigate** to a Scaler Academy lecture page in Chrome and play the video briefly so the extension captures the HLS stream URL and CloudFront auth tokens.
+3. **Download** -- Click the Scaler Companion extension icon. The popup shows the detected lecture. Click "Download Lecture". Optionally set start/end times to trim the recording.
+4. **Process** -- Once downloaded, open the dashboard at `http://localhost:5173`. Click on a recording and choose which pipeline stages to run (transcription, slide extraction, note generation). Select your preferred models.
+5. **Review** -- Open the recording in the viewer to read lecture notes, summary, Q&A cards, transcript, and announcements in a tabbed interface.
+6. **Search** -- Use the search page to find concepts across all processed lectures.
+7. **Export** -- Download a ZIP of all artifacts for offline use or import into Obsidian, Notion, etc.
+
+### Configure LLM Provider
+
+From the dashboard **Settings** page:
+1. Choose between **Ollama** (local/free) or **OpenAI** (cloud/API key)
+2. For Ollama: set the base URL (default `http://localhost:11434`)
+3. For OpenAI: enter your API key
+4. Test the connection, select a model, and save
 
 ---
 
@@ -151,6 +158,7 @@ Scaler-Companion/
 │   │   │       ├── content.py      # GET /recordings, DELETE /recordings/{id}
 │   │   │       ├── search.py       # GET /search?q=...
 │   │   │       ├── export.py       # GET /export/{id}
+│   │   │       ├── settings.py     # GET/PUT /settings, GET /providers
 │   │   │       └── system.py       # GET /models, GET /queue
 │   │   ├── core/
 │   │   │   ├── config.py           # Pydantic settings (paths, model names)
@@ -162,7 +170,8 @@ Scaler-Companion/
 │   │   │   ├── downloader.py       # HLS chunk download + FFmpeg merge
 │   │   │   ├── whisper_service.py  # Whisper model loading and transcription
 │   │   │   ├── vision_service.py   # Frame extraction, dedup, EasyOCR
-│   │   │   ├── ollama_service.py   # Chunked transcript -> LLM notes
+│   │   │   ├── llm_service.py      # Provider-agnostic LLM (Ollama/OpenAI)
+│   │   │   ├── llm/                # LLM provider implementations
 │   │   │   ├── pipeline.py         # Orchestrates the full processing pipeline
 │   │   │   └── search_service.py   # Full-text search across output files
 │   │   └── utils/
@@ -170,23 +179,26 @@ Scaler-Companion/
 │   ├── requirements.txt
 │   └── output/                     # Generated artifacts (gitignored)
 │
-├── dashboard/                      # React frontend (Vite + Tailwind CSS v4)
+├── dashboard/                      # React frontend (Vite + shadcn/ui)
 │   ├── src/
-│   │   ├── App.jsx                 # Route definitions
+│   │   ├── App.jsx                 # Route definitions, providers
+│   │   ├── index.css               # Tailwind v4 config, theme variables
+│   │   ├── lib/utils.js            # cn() utility (clsx + tailwind-merge)
 │   │   ├── pages/
 │   │   │   ├── HomePage.jsx        # Library grid of recordings
 │   │   │   ├── ViewerPage.jsx      # Tabbed viewer for lecture artifacts
 │   │   │   ├── QueuePage.jsx       # Processing queue monitor
 │   │   │   ├── SearchPage.jsx      # Full-text search interface
-│   │   │   └── SettingsPage.jsx    # Theme, default models, auto-process
+│   │   │   └── SettingsPage.jsx    # LLM provider config, theme toggle
 │   │   ├── components/
-│   │   │   ├── layout/             # Layout shell, sidebar navigation
-│   │   │   ├── common/             # Shared components (Tabs)
+│   │   │   ├── ui/                 # shadcn/ui primitives (button, card, dialog, etc.)
+│   │   │   ├── layout/             # AppSidebar, SiteHeader, Layout
 │   │   │   └── features/           # Recording cards, viewer, queue, modal
 │   │   ├── services/
 │   │   │   └── api.js              # Axios API client
 │   │   └── hooks/
-│   │       └── useTheme.js         # Dark mode hook
+│   │       └── useTheme.js         # Persistent dark mode hook
+│   ├── components.json             # shadcn/ui configuration
 │   ├── package.json
 │   └── vite.config.js              # Dev server proxy to backend
 │
@@ -233,8 +245,11 @@ All endpoints are prefixed with `/api/v1`.
 | `DELETE` | `/api/v1/recordings/{id}` | Delete a recording and its artifacts |
 | `GET` | `/api/v1/search?q=...` | Full-text search across transcripts and notes |
 | `GET` | `/api/v1/export/{id}` | Download recording artifacts as a ZIP |
-| `GET` | `/api/v1/models` | List available Whisper and Ollama models |
+| `GET` | `/api/v1/models` | List available Whisper and LLM models |
 | `GET` | `/api/v1/queue` | View the processing queue and job history |
+| `GET` | `/api/v1/settings` | Get current settings (provider, model, URLs) |
+| `PUT` | `/api/v1/settings` | Update settings |
+| `GET` | `/api/v1/providers` | List LLM providers and connection status |
 
 Static artifacts are served at `/content/{recording_id}/...`.
 
@@ -242,13 +257,16 @@ Static artifacts are served at `/content/{recording_id}/...`.
 
 ## Configuration
 
-The backend reads configuration from environment variables or a `.env` file in the `backend/` directory.
+LLM provider, model, and connection settings are managed from the **dashboard Settings page** and persisted in `backend/config.json`.
+
+You can also set initial values via environment variables or a `.env` file in `backend/`:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `WHISPER_MODEL` | `turbo` | Whisper model size (`tiny`, `small`, `medium`, `turbo`, `large-v3`) |
+| `LLM_PROVIDER` | `ollama` | LLM provider (`ollama` or `openai`) |
 | `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama API endpoint |
-| `OLLAMA_MODEL` | `gpt-oss:20b` | Default Ollama model for note generation |
+| `OPENAI_API_KEY` | _(empty)_ | OpenAI API key (required if using OpenAI provider) |
 
 ---
 
@@ -257,7 +275,7 @@ The backend reads configuration from environment variables or a `.env` file in t
 **Backend:**
 - FastAPI + Uvicorn
 - OpenAI Whisper (local inference)
-- Ollama (local LLM)
+- Ollama or OpenAI (provider-agnostic LLM)
 - EasyOCR (optical character recognition)
 - imagehash (perceptual hashing for slide deduplication)
 - FFmpeg via ffmpeg-python (audio extraction, video merging)
@@ -265,10 +283,12 @@ The backend reads configuration from environment variables or a `.env` file in t
 
 **Frontend:**
 - React 19 with Vite 7
-- Tailwind CSS v4
+- shadcn/ui (base-nova) + Tailwind CSS v4
 - React Router v7
 - react-markdown + remark-gfm (Markdown rendering)
 - Lucide React (icons)
+- Sonner (toast notifications)
+- date-fns (date formatting)
 - Axios (HTTP client)
 
 **Extension:**
