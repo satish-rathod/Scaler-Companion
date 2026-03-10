@@ -7,7 +7,7 @@ from typing import Dict, Any, Callable, Optional
 from datetime import datetime
 from app.services.whisper_service import WhisperService
 from app.services.vision_service import VisionService
-from app.services.ollama_service import OllamaService
+from app.services.llm_service import LLMService
 from app.core.config import settings
 
 def log_debug(message: str):
@@ -18,11 +18,11 @@ def log_debug(message: str):
 class ProcessingPipeline:
     def __init__(self, output_base: str = str(settings.OUTPUT_DIR),
                  whisper_model: str = settings.WHISPER_MODEL,
-                 ollama_model: str = settings.OLLAMA_MODEL):
+                 llm_model: str = None):
         self.output_base = Path(output_base)
         self.whisper_service = WhisperService()
         self.vision_service = VisionService()
-        self.ollama_service = OllamaService()
+        self.llm_service = LLMService(model=llm_model)
         self.progress_callback: Optional[Callable[[str, int, int, str], None]] = None
 
     def set_progress_callback(self, callback: Callable[[str, int, int, str], None]):
@@ -167,7 +167,7 @@ class ProcessingPipeline:
 
             log_debug(f"Starting LLM note generation (transcript: {len(transcript_text)} chars, slides: {len(slides_context)} chars)")
             try:
-                notes_data = self.ollama_service.generate_notes(transcript_text, slides_context)
+                notes_data = self.llm_service.generate_notes(transcript_text, slides_context)
                 log_debug(f"LLM generation complete")
             except Exception as e:
                 log_debug(f"❌ LLM NOTE GENERATION FAILED: {e}")
