@@ -34,7 +34,7 @@ class ProcessRequest(BaseModel):
     videoPath: str
     options: Dict = {}
     whisperModel: str = "medium"
-    ollamaModel: str = "gpt-oss:20b"
+    llmModel: str = "gpt-oss:20b"
     skipTranscription: bool = False
     skipFrames: bool = False
     skipNotes: bool = False
