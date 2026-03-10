@@ -5,10 +5,10 @@ import { getModels, startProcessing } from '../../../services/api';
 const ProcessModal = ({ recording, onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [initializing, setInitializing] = useState(true);
-  const [models, setModels] = useState({ whisper: [], ollama: [] });
+  const [models, setModels] = useState({ whisper: [], llm: [], llmProvider: 'ollama' });
   const [config, setConfig] = useState({
     whisperModel: 'turbo',
-    ollamaModel: '',
+    llmModel: '',
     skipTranscription: false,
     skipFrames: false,
     skipNotes: false,
@@ -19,8 +19,8 @@ const ProcessModal = ({ recording, onClose, onSuccess }) => {
       try {
         const data = await getModels();
         setModels(data);
-        if (data.ollama.length > 0) {
-          setConfig(prev => ({ ...prev, ollamaModel: data.ollama[0] }));
+        if (data.llm && data.llm.length > 0) {
+          setConfig(prev => ({ ...prev, llmModel: data.llm[0] }));
         }
       } catch (err) {
         console.error("Failed to load models", err);
@@ -89,14 +89,14 @@ const ProcessModal = ({ recording, onClose, onSuccess }) => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Notes Model (Ollama)
+                Notes Model ({models.llmProvider === 'openai' ? 'OpenAI' : 'Ollama'})
               </label>
               <select
-                value={config.ollamaModel}
-                onChange={e => setConfig({ ...config, ollamaModel: e.target.value })}
+                value={config.llmModel}
+                onChange={e => setConfig({ ...config, llmModel: e.target.value })}
                 className="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               >
-                {models.ollama.map(m => (
+                {(models.llm || []).map(m => (
                   <option key={m} value={m}>{m}</option>
                 ))}
               </select>
