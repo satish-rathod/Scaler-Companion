@@ -1,16 +1,18 @@
 import { useState, useEffect } from 'react';
 
-const useTheme = () => {
-  const [theme, setTheme] = useState('light');
-
-  useEffect(() => {
-    // Read from localStorage or settings
-    const savedSettings = localStorage.getItem('scaler_settings');
-    if (savedSettings) {
-      const parsed = JSON.parse(savedSettings);
-      if (parsed.theme) setTheme(parsed.theme);
+function getInitialTheme() {
+  try {
+    const saved = localStorage.getItem('scaler_settings');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed.theme) return parsed.theme;
     }
-  }, []);
+  } catch {}
+  return 'light';
+}
+
+const useTheme = () => {
+  const [theme, setTheme] = useState(getInitialTheme);
 
   useEffect(() => {
     if (theme === 'dark') {
@@ -19,7 +21,6 @@ const useTheme = () => {
       document.documentElement.classList.remove('dark');
     }
 
-    // Persist
     const saved = localStorage.getItem('scaler_settings');
     const settings = saved ? JSON.parse(saved) : {};
     if (settings.theme !== theme) {

@@ -1,15 +1,20 @@
-import Sidebar from './Sidebar';
+import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
+import { AppSidebar } from './AppSidebar';
+import { SiteHeader } from './SiteHeader';
 
 const Layout = ({ children }) => {
   return (
-    <div className="min-h-screen bg-notion-bg text-notion-text">
-      <Sidebar />
-      <main className="ml-60 p-12">
-        <div className="max-w-4xl mx-auto">
-          {children}
-        </div>
-      </main>
-    </div>
+    <SidebarProvider>
+      <AppSidebar />
+      <SidebarInset>
+        <SiteHeader />
+        <main className="flex-1 p-6">
+          <div className="max-w-6xl mx-auto">
+            {children}
+          </div>
+        </main>
+      </SidebarInset>
+    </SidebarProvider>
   );
 };
 
