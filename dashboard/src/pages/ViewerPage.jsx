@@ -158,11 +158,9 @@ const ViewerPage = () => {
         </div>
         <div className="flex items-center gap-2">
           {videoUrl && (
-            <Button asChild>
-              <a href={videoUrl} target="_blank" rel="noopener noreferrer">
-                <Play className="mr-2 h-4 w-4" />
-                Watch Video
-              </a>
+            <Button render={<a href={videoUrl} target="_blank" rel="noopener noreferrer" />}>
+              <Play className="mr-2 h-4 w-4" />
+              Watch Video
             </Button>
           )}
           <Button variant="outline" onClick={handleExport}>
@@ -173,22 +171,16 @@ const ViewerPage = () => {
       </div>
 
       {/* Content Tabs */}
-      <Card>
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <div className="border-b px-6 pt-4">
-            <TabsList className="bg-transparent p-0 h-auto gap-4">
-              {tabConfig.map((tab) => (
-                <TabsTrigger
-                  key={tab.id}
-                  value={tab.id}
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-1 pb-3"
-                >
-                  <tab.icon className="mr-2 h-4 w-4" />
-                  {tab.label}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </div>
+      <Card className="py-4 gap-0">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="gap-0">
+          <TabsList variant="line" className="px-6 pb-4">
+            {tabConfig.map((tab) => (
+              <TabsTrigger key={tab.id} value={tab.id} className="px-3 py-3">
+                <tab.icon className="h-4 w-4" />
+                {tab.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
 
           {tabConfig.map((tab) => (
             <TabsContent key={tab.id} value={tab.id} className="mt-0">
