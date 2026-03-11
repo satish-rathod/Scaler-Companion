@@ -43,6 +43,9 @@ Thumbs.db
 # Verification/Testing
 verification/
 
+# Config with secrets
+backend/config.json
+
 # Build artifacts
 build/
 *.pyc
